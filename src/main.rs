@@ -1,31 +1,19 @@
 mod config_loader;
 
-use std::sync::Arc;
-use serde::Serialize;
+use crate::config_loader::get_dsn;
 use auth_framework::prelude::*;
-use auth_framework::{AuthFramework};
-use serde_json::json;
-use crate::config_loader::{get_dsn};
+use auth_framework::AuthFramework;
 use axum::{
-    Json, Router,
-    extract::State,
-    http::{Request, StatusCode},
+    extract::State, http::{Request, StatusCode},
     middleware::Next,
     response::IntoResponse,
     routing::{get, post},
+    Json,
+    Router,
 };
+use serde_json::json;
+use std::sync::Arc;
 use tokio::net::TcpListener;
-
-#[derive(Serialize)]
-struct Greeting {
-    message: String,
-}
-
-async fn hello() -> Json<Greeting> {
-    Json(Greeting {
-        message: "Hello, world!".into(),
-    })
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -85,18 +73,22 @@ async fn create_auth_framework() -> Result<Arc<AuthFramework>, Box<dyn std::erro
 }
 
 async fn create_app(auth: Arc<AuthFramework>) -> AuthFrameworkResult<Router> {
-    // Build the main application
     let protected_routes = Router::new()
         .route("/auth/profile", get(protected_content_handler)) // if you have this
         .route("/protected", get(protected_content_handler))
         .route("/admin", get(admin_only_handler))
-        .route("/api/users", get(list_users_handler).post(create_user_handler))
-        .route("/api/settings", get(get_settings_handler).post(update_settings_handler))
+        .route(
+            "/api/users",
+            get(list_users_handler).post(create_user_handler),
+        )
+        .route(
+            "/api/settings",
+            get(get_settings_handler).post(update_settings_handler),
+        )
         .layer(axum::middleware::from_fn_with_state(
             auth.clone(),
             simple_auth_middleware,
         ));
-
     let app = Router::new()
         .route("/", get(welcome_handler))
         .route("/auth/login", post(login_handler))
@@ -153,7 +145,6 @@ async fn admin_only_handler() -> impl IntoResponse {
             "security_settings"
         ]
     }))
-        .into_response()
 }
 
 /// Simple protected handler that works with basic middleware
@@ -162,7 +153,6 @@ async fn simple_protected_handler() -> impl IntoResponse {
         "message": "This is protected content!",
         "note": "Authentication verified by middleware"
     }))
-        .into_response()
 }
 
 /// Simple admin handler that works with basic middleware
@@ -171,7 +161,6 @@ async fn simple_admin_handler() -> impl IntoResponse {
         "message": "Welcome to the admin panel!",
         "note": "Admin access verified"
     }))
-        .into_response()
 }
 
 /// Simple auth middleware for protected routes
