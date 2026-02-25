@@ -1,3 +1,4 @@
+use std::env;
 use serde::Deserialize;
 use std::time::Duration;
 
@@ -53,4 +54,18 @@ pub fn parse_expiry(expiry: &str) -> Duration {
         "s" => Duration::from_secs(value),
         _ => Duration::from_secs(3600),
     }
+}
+
+pub fn get_dsn() -> Result<String, env::VarError> {
+    dotenvy::dotenv().ok();
+
+    let db_user = env::var("POSTGRES_USER")?;
+    let db_pass = env::var("POSTGRES_PASSWORD")?;
+    let db_host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".into());
+    let db_port = env::var("POSTGRES_PORT").unwrap_or_else(|_| "5432".into());
+    let db_name = env::var("POSTGRES_DB")?;
+
+    Ok(format!(
+        "postgres://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    ))
 }
