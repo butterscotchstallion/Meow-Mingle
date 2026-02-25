@@ -25,3 +25,5 @@ target
 
 /target
 .idea
+.env
+auth-framework.toml
