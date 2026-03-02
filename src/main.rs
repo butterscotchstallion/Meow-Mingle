@@ -6,10 +6,7 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // API server
     let app = create_app().await?;
-
-    // Start the server
     let listener = TcpListener::bind("127.0.0.1:3000")
         .await
         .map_err(|e| format!("Failed to bind server: {}", e))?;
