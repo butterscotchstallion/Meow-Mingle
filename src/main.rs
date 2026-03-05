@@ -1,17 +1,10 @@
-use crate::cat::Cat;
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::{routing::get, Json, Router};
 use dotenv::dotenv;
-use serde_json::json;
+use meow_mingle::create_app;
 use sqlx::PgPool;
-use status::Status;
 use std::env;
 use tokio::net::TcpListener;
 
-mod cat;
-mod status;
+mod hasher;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -31,37 +24,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| format!("Server error: {}", e))?;
 
     Ok(())
-}
-
-async fn create_app(pool: PgPool) -> Result<Router, Box<dyn std::error::Error>> {
-    let app = Router::new()
-        .route("/", get(cats_list_handler))
-        .with_state(pool);
-
-    Ok(app)
-}
-
-#[axum::debug_handler]
-async fn cats_list_handler(
-    State(pool): State<PgPool>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let cats: Vec<Cat> = sqlx::query_as!(Cat, "SELECT * FROM cats")
-        .fetch_all(&pool)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "status": Status::Error,
-                    "message": e.to_string()
-                })),
-            )
-        })?;
-    Ok((
-        StatusCode::OK,
-        Json(json!({
-            "status": Status::Ok,
-            "results": cats
-        })),
-    ))
 }

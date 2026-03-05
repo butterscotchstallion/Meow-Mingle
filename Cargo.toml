@@ -2,12 +2,28 @@
 name = "Meow_Mingle"
 version = "0.1.0"
 edition = "2024"
+default-run = "Meow_Mingle"
 
 [dependencies]
 axum = { version = "0.8.8", features = ["macros"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.149"
 tokio = { version = "1", features = ["full"] }
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-native-tls"] }
+sqlx = { version = "0.8.6", features = ["postgres", "uuid", "time", "runtime-tokio-native-tls"] }
 dotenv = "0.15"
+uuid = { version = "1", features = ["serde"] }
+time = { version = "0.3", features = ["serde"] }
+argon2 = "0.5.3"
+rand_core = { version = "0.10.0" }
 
+[dev-dependencies]
+axum-test = "17"
+tokio = { version = "1", features = ["full"] }
+
+[[bin]]
+name = "hash_password"
+path = "src/bin/hash_password.rs"
+
+[lib]
+name = "meow_mingle"
+path = "src/lib.rs"
