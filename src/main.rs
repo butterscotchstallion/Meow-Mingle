@@ -3,6 +3,8 @@ use axum::response::IntoResponse;
 use axum::{routing::get, Json, Router};
 use serde_json::json;
 use tokio::net::TcpListener;
+mod status;
+use status::Status;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,6 +30,9 @@ async fn create_app() -> Result<Router, Box<dyn std::error::Error>> {
 async fn welcome_handler() -> impl IntoResponse {
     (
         StatusCode::CREATED,
-        Json(json!({"message": "Hello world!"})),
+        Json(json!({
+            "status": Status::Ok,
+            "message": "Hello world!"
+        })),
     )
 }
