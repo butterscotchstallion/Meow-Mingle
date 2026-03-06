@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, username, created_at, updated_at, activated, avatar_filename FROM cats",
+  "query": "\n            SELECT id, cat_id, created_at, updated_at, active\n            FROM sessions\n            WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -10,8 +10,8 @@
       },
       {
         "ordinal": 1,
-        "name": "username",
-        "type_info": "Varchar"
+        "name": "cat_id",
+        "type_info": "Uuid"
       },
       {
         "ordinal": 2,
@@ -25,26 +25,22 @@
       },
       {
         "ordinal": 4,
-        "name": "activated",
+        "name": "active",
         "type_info": "Bool"
-      },
-      {
-        "ordinal": 5,
-        "name": "avatar_filename",
-        "type_info": "Varchar"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid"
+      ]
     },
     "nullable": [
-      false,
-      false,
       true,
+      false,
       true,
       true,
       true
     ]
   },
-  "hash": "788572b48562ccf9e0f2da94134a2d65bc2f6bb49462489f1963698753a3f672"
+  "hash": "e7a7dd1f9342b7891f4befac369fbd713a0b7cf785defaf915e933e64f15e70a"
 }
