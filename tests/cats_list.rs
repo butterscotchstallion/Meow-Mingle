@@ -1,6 +1,6 @@
 use axum::http::StatusCode;
 use axum_test::TestServer;
-use meow_mingle::{create_app, get_db_pool};
+use meow_mingle::{create_app, get_db_pool, routes};
 use once_cell::sync::OnceCell;
 
 static SERVER: OnceCell<TestServer> = OnceCell::new();
@@ -20,14 +20,14 @@ async fn get_server() -> &'static TestServer {
 #[tokio::test]
 async fn test_cats_list_returns_200() {
     let server = get_server().await;
-    let response = server.get("/cats").await;
+    let response = server.get(routes::CATS_LIST).await;
     response.assert_status(StatusCode::OK);
 }
 
 #[tokio::test]
 async fn test_cats_list_response_shape() {
     let server = get_server().await;
-    let response = server.get("/cats").await;
+    let response = server.get(routes::CATS_LIST).await;
     let body = response.json::<serde_json::Value>();
 
     assert_eq!(body["status"], "OK");

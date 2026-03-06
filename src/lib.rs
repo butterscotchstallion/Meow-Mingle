@@ -11,9 +11,13 @@ mod handlers;
 pub mod hasher;
 mod status;
 
+pub mod routes {
+    pub const CATS_LIST: &str = "/";
+}
+
 pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn std::error::Error>> {
     let app = Router::new()
-        .route("/cats", get(cats_list_handler))
+        .route(routes::CATS_LIST, get(cats_list_handler))
         .with_state(pool);
 
     Ok(app)
