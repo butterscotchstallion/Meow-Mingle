@@ -33,6 +33,12 @@ pub struct AuthResponseWithSessionInfo {
     results: AuthSessionInfo,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct AuthLoginPayload {
+    pub username: String,
+    pub password: String,
+}
+
 pub mod routes {
     pub const AUTH_LOGIN: &str = "/auth/login";
 }

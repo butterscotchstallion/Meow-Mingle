@@ -3,19 +3,17 @@ mod helpers;
 use axum::http::StatusCode;
 use meow_mingle::config;
 use meow_mingle::handlers::auth::routes::AUTH_LOGIN;
+use meow_mingle::handlers::auth::AuthLoginPayload;
 use serde_json::json;
 
 #[tokio::test]
 async fn test_login_invalid_credentials_returns_401() {
     let server = helpers::get_server().await;
-
-    let response = server
-        .post(AUTH_LOGIN)
-        .json(&json!({
-            "username": "nonexistent_cat",
-            "password": "wrong password"
-        }))
-        .await;
+    let payload = AuthLoginPayload {
+        username: "nonexistent_cat".to_string(),
+        password: "wrong password".to_string(),
+    };
+    let response = server.post(AUTH_LOGIN).json(&payload).await;
 
     response.assert_status(StatusCode::UNAUTHORIZED);
     let body = response.json::<serde_json::Value>();
@@ -29,7 +27,7 @@ async fn test_login_missing_fields_returns_422() {
     let response = server
         .post(AUTH_LOGIN)
         .json(&json!({
-            "username": "only_username"
+            "foo": "baz"
         }))
         .await;
 
@@ -48,6 +46,9 @@ async fn test_login_with_config_user() {
             "password": cfg.test_users.admin_password
         }))
         .await;
-
     response.assert_status(StatusCode::OK);
+
+    let body = response.json::<serde_json::Value>();
+    assert_eq!(body["status"], "OK");
+    assert_eq!(body["message"], "Login successful");
 }
