@@ -6,6 +6,7 @@ use std::env;
 use std::error::Error;
 
 mod cat;
+pub mod config;
 pub mod handlers;
 pub mod hasher;
 pub mod session;

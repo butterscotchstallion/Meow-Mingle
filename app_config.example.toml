@@ -1,0 +1,5 @@
+[testUsers]
+adminUsername = "admin-user"
+adminPassword = "admin-user-password"
+unprivilegedUsername = "unprivileged-user"
+unprivilegedPassword = "unprivileged-user-password"
