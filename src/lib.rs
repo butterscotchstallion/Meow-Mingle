@@ -10,7 +10,7 @@ mod cat;
 mod handlers;
 pub mod hasher;
 mod session;
-mod status;
+pub mod status;
 
 pub mod routes {
     pub const CATS_LIST: &str = "/cats";
