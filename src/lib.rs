@@ -1,4 +1,3 @@
-use crate::handlers::*;
 use axum::routing::get;
 use axum::Router;
 use dotenv::dotenv;
@@ -11,6 +10,9 @@ mod handlers;
 pub mod hasher;
 mod session;
 pub mod status;
+
+use handlers::cats::cats_list_handler;
+use handlers::session::session_get_by_id_handler;
 
 pub mod routes {
     pub const CATS_LIST: &str = "/cats";
