@@ -8,6 +8,10 @@ use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+pub mod routes {
+    pub const SESSION_GET_BY_ID: &str = "/session/{id}";
+}
+
 #[axum::debug_handler]
 pub async fn session_get_by_id_handler(
     State(pool): State<PgPool>,

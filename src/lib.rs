@@ -6,23 +6,20 @@ use std::env;
 use std::error::Error;
 
 mod cat;
-mod handlers;
+pub mod handlers;
 pub mod hasher;
-mod session;
+pub mod session;
 pub mod status;
 
-use handlers::cats::cats_list_handler;
-use handlers::session::session_get_by_id_handler;
-
-pub mod routes {
-    pub const CATS_LIST: &str = "/cats";
-    pub const SESSION_GET_BY_ID: &str = "/sessions/{id}";
-}
+pub use crate::handlers::cats;
+use crate::handlers::session::routes::*;
+use handlers::cats::*;
+use handlers::session::*;
 
 pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
     let app = Router::new()
-        .route(routes::CATS_LIST, get(cats_list_handler))
-        .route(routes::SESSION_GET_BY_ID, get(session_get_by_id_handler))
+        .route(cats::routes::CATS_LIST, get(cats_list_handler))
+        .route(SESSION_GET_BY_ID, get(session_get_by_id_handler))
         .with_state(pool);
 
     Ok(app)

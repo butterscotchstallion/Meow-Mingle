@@ -7,6 +7,10 @@ use axum::Json;
 use serde_json::json;
 use sqlx::PgPool;
 
+pub mod routes {
+    pub const CATS_LIST: &str = "/cats";
+}
+
 #[axum::debug_handler]
 pub async fn cats_list_handler(
     State(pool): State<PgPool>,

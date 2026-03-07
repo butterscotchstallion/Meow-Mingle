@@ -1,6 +1,6 @@
 use crate::helpers::get_server;
 use axum::http::StatusCode;
-use meow_mingle::routes;
+use meow_mingle::cats::routes;
 mod helpers;
 
 #[tokio::test]
