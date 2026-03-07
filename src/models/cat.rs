@@ -3,7 +3,7 @@ use sqlx::types::Uuid;
 use time::serde::rfc3339;
 
 #[derive(serde::Serialize)]
-pub(crate) struct Cat {
+pub struct Cat {
     pub id: Uuid,
     pub username: String,
     #[serde(with = "rfc3339::option")]

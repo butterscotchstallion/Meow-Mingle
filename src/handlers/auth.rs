@@ -1,5 +1,6 @@
 use crate::hasher;
-use crate::status::Status;
+use crate::models::cat::Cat;
+use crate::models::status::Status;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -17,6 +18,19 @@ pub struct AuthPayload {
 pub struct AuthResponse {
     status: Status,
     message: String,
+}
+
+#[derive(Serialize)]
+pub struct AuthSessionInfo {
+    pub session_id: String,
+    pub cat: Cat,
+}
+
+#[derive(Serialize)]
+pub struct AuthResponseWithSessionInfo {
+    status: Status,
+    message: String,
+    results: AuthSessionInfo,
 }
 
 pub mod routes {

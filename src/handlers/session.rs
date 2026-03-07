@@ -1,5 +1,5 @@
-use crate::session::Session;
-use crate::status::Status;
+use crate::models::session::Session;
+use crate::models::status::Status;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;

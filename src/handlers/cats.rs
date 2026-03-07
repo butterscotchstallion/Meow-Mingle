@@ -1,5 +1,5 @@
-use crate::cat::Cat;
-use crate::status::Status;
+use crate::models::cat::Cat;
+use crate::models::status::Status;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
