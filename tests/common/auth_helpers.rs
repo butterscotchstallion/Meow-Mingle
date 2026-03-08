@@ -1,7 +1,7 @@
 use crate::common::helpers::get_server;
 use axum::http::StatusCode;
 use meow_mingle::handlers::auth::routes::AUTH_SIGN_IN;
-use meow_mingle::handlers::auth::{AuthLoginPayload, AuthResponseWithSessionInfo};
+use meow_mingle::handlers::auth::{AuthResponseWithSessionInfo, AuthSignInPayload};
 
 #[allow(dead_code)]
 pub async fn get_session_id_and_verify(name: String, password: String) -> String {
@@ -9,7 +9,7 @@ pub async fn get_session_id_and_verify(name: String, password: String) -> String
     let cat_name = name.clone();
     let response = server
         .post(AUTH_SIGN_IN)
-        .json(&AuthLoginPayload {
+        .json(&AuthSignInPayload {
             name: name.clone(),
             password,
         })

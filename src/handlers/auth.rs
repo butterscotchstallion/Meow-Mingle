@@ -39,7 +39,7 @@ pub struct AuthResponseWithSessionInfo {
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct AuthLoginPayload {
+pub struct AuthSignInPayload {
     pub name: String,
     pub password: String,
 }

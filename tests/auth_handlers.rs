@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use meow_mingle::config;
 use meow_mingle::handlers::auth::routes::AUTH_SIGN_IN;
-use meow_mingle::handlers::auth::AuthLoginPayload;
+use meow_mingle::handlers::auth::AuthSignInPayload;
 use serde_json::json;
 
 #[allow(dead_code)]
@@ -10,9 +10,9 @@ use common::auth_helpers::get_session_id_and_verify;
 use common::helpers::get_server;
 
 #[tokio::test]
-async fn test_login_invalid_credentials_returns_401() {
+async fn test_sign_in_invalid_credentials_returns_401() {
     let server = get_server().await;
-    let payload = AuthLoginPayload {
+    let payload = AuthSignInPayload {
         name: "nonexistent_cat".to_string(),
         password: "wrong password".to_string(),
     };
@@ -24,7 +24,7 @@ async fn test_login_invalid_credentials_returns_401() {
 }
 
 #[tokio::test]
-async fn test_login_missing_fields_returns_422() {
+async fn test_sign_in_missing_fields_returns_422() {
     let server = get_server().await;
     let response = server
         .post(AUTH_SIGN_IN)
@@ -37,7 +37,7 @@ async fn test_login_missing_fields_returns_422() {
 }
 
 #[tokio::test]
-async fn test_login_with_config_user() {
+async fn test_sign_in_with_config_user() {
     let cfg = config::load_config();
     get_session_id_and_verify(
         cfg.test_users.admin_username.clone(),
