@@ -8,7 +8,7 @@ use std::error::Error;
 pub mod config;
 pub mod handlers;
 pub mod hasher;
-mod models;
+pub mod models;
 
 pub use crate::handlers::cats;
 use crate::handlers::session::routes::*;
@@ -19,6 +19,7 @@ use handlers::session::*;
 pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
     let app = Router::new()
         .route(cats::routes::CATS_LIST, get(cats_list_handler))
+        .route(cats::routes::CAT_DETAIL, get(cat_detail_handler))
         .route(SESSION_GET_BY_ID, get(session_get_by_id_handler))
         .route(
             handlers::auth::routes::AUTH_LOGIN,

@@ -10,7 +10,7 @@ use serde_json::json;
 async fn test_login_invalid_credentials_returns_401() {
     let server = helpers::get_server().await;
     let payload = AuthLoginPayload {
-        username: "nonexistent_cat".to_string(),
+        name: "nonexistent_cat".to_string(),
         password: "wrong password".to_string(),
     };
     let response = server.post(AUTH_LOGIN).json(&payload).await;
@@ -40,7 +40,7 @@ async fn test_login_with_config_user() {
     let response = server
         .post(AUTH_LOGIN)
         .json(&AuthLoginPayload {
-            username: cfg.test_users.admin_username.clone(),
+            name: cfg.test_users.admin_username.clone(),
             password: cfg.test_users.admin_password,
         })
         .await;
@@ -50,7 +50,7 @@ async fn test_login_with_config_user() {
 
     assert_eq!(body.status, "OK");
     assert_eq!(body.message, "Login successful");
-    assert_eq!(body.results.cat.username, cfg.test_users.admin_username);
+    assert_eq!(body.results.cat.name, cfg.test_users.admin_username);
     assert_eq!(body.results.cat.password, "");
     assert_eq!(body.results.session_id.len(), 36);
 }

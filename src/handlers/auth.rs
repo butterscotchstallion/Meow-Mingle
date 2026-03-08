@@ -1,5 +1,5 @@
 use crate::hasher;
-use crate::models::cat::{get_cat_by_username, Cat};
+use crate::models::cat::{get_cat_by_name, Cat};
 use crate::models::session::get_or_generate_session_id;
 use crate::models::status::Status;
 use axum::extract::State;
@@ -11,7 +11,7 @@ use sqlx::PgPool;
 
 #[derive(Deserialize)]
 pub struct AuthPayload {
-    pub username: String,
+    pub name: String,
     pub password: String,
 }
 
@@ -36,7 +36,7 @@ pub struct AuthResponseWithSessionInfo {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct AuthLoginPayload {
-    pub username: String,
+    pub name: String,
     pub password: String,
 }
 
@@ -48,17 +48,15 @@ pub async fn login_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthResponse>)> {
-    let cat_result = get_cat_by_username(&pool, payload.username)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(AuthResponse {
-                    status: Status::Error,
-                    message: e.to_string(),
-                }),
-            )
-        })?;
+    let cat_result = get_cat_by_name(&pool, payload.name).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(AuthResponse {
+                status: Status::Error,
+                message: e.to_string(),
+            }),
+        )
+    })?;
     let cat_row = match cat_result {
         Some(r) => r,
         None => {
