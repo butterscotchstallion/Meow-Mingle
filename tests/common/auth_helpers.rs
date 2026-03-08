@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use meow_mingle::handlers::auth::routes::AUTH_LOGIN;
 use meow_mingle::handlers::auth::{AuthLoginPayload, AuthResponseWithSessionInfo};
 
+#[allow(dead_code)]
 pub async fn get_session_id_and_verify(name: String, password: String) -> String {
     let server = get_server().await;
     let cat_name = name.clone();

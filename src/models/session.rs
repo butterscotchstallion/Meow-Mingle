@@ -2,6 +2,7 @@ use sqlx::types::time::OffsetDateTime;
 use time::serde::rfc3339;
 use uuid::Uuid;
 
+#[allow(dead_code)]
 #[derive(serde::Serialize)]
 pub(crate) struct Session {
     pub id: Option<Uuid>,
