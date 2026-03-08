@@ -58,7 +58,7 @@ pub async fn cat_detail_handler(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(CatDetailResponse {
                 status: Status::Error,
-                message: Option::from(String::from(e.to_string())),
+                message: Some(e.to_string()),
                 results: None,
             }),
         )

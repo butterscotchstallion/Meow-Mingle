@@ -1,26 +1,21 @@
 use crate::hasher;
-use crate::models::cat::{get_cat_by_name, Cat};
+use crate::models::cat::{get_cat_by_name, Cat, NewCat};
 use crate::models::session::get_or_generate_session_id;
 use crate::models::status::Status;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::PgPool;
 
 pub mod routes {
     pub const AUTH_SIGN_IN: &str = "/auth/sign-in";
-}
-
-#[derive(Deserialize)]
-pub struct AuthPayload {
-    pub name: String,
-    pub password: String,
+    pub const AUTH_SIGN_UP: &str = "/auth/sign-up";
 }
 
 #[derive(Serialize)]
-pub struct AuthResponse {
+pub struct AuthSignInResponse {
     pub(crate) status: Status,
     pub(crate) message: String,
 }
@@ -44,14 +39,33 @@ pub struct AuthSignInPayload {
     pub password: String,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct AuthSignUpPayload {
+    pub cat: NewCat,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct AuthSignUpResponseResults {
+    pub cat: Cat,
+    pub session_id: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct AuthSignUpResponse {
+    pub status: Status,
+    pub message: String,
+    pub results: Option<AuthSignUpResponseResults>,
+}
+
+#[axum::debug_handler]
 pub async fn sign_in_handler(
     State(pool): State<PgPool>,
-    Json(payload): Json<AuthPayload>,
-) -> Result<impl IntoResponse, (StatusCode, Json<AuthResponse>)> {
+    Json(payload): Json<AuthSignInPayload>,
+) -> Result<impl IntoResponse, (StatusCode, Json<AuthSignInResponse>)> {
     let cat_result = get_cat_by_name(&pool, payload.name).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(AuthResponse {
+            Json(AuthSignInResponse {
                 status: Status::Error,
                 message: e.to_string(),
             }),
@@ -62,7 +76,7 @@ pub async fn sign_in_handler(
         None => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(AuthResponse {
+                Json(AuthSignInResponse {
                     status: Status::Error,
                     message: "Invalid username or password".to_string(),
                 }),
@@ -74,7 +88,7 @@ pub async fn sign_in_handler(
     let is_valid = hasher::verify_password(&payload.password, &cat_row.password).map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(AuthResponse {
+            Json(AuthSignInResponse {
                 status: Status::Error,
                 message: e.to_string(),
             }),
@@ -87,7 +101,7 @@ pub async fn sign_in_handler(
             .map_err(|e| {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(AuthResponse {
+                    Json(AuthSignInResponse {
                         status: Status::Error,
                         message: e.to_string(),
                     }),
@@ -107,10 +121,72 @@ pub async fn sign_in_handler(
     } else {
         Err((
             StatusCode::UNAUTHORIZED,
-            Json(AuthResponse {
+            Json(AuthSignInResponse {
                 status: Status::Error,
                 message: "Invalid username or password".to_string(),
             }),
         ))
     }
+}
+
+#[axum::debug_handler]
+pub async fn sign_up_handler(
+    State(pool): State<PgPool>,
+    Json(payload): Json<AuthSignUpPayload>,
+) -> Result<impl IntoResponse, (StatusCode, Json<AuthSignUpResponse>)> {
+    let hashed_password = hasher::hash_password(&payload.cat.password).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(AuthSignUpResponse {
+                status: Status::Error,
+                message: format!("Failed to hash password: {}", e),
+                results: None,
+            }),
+        )
+    })?;
+
+    let cat_from_payload = NewCat {
+        name: payload.cat.name,
+        password: hashed_password,
+        age: payload.cat.age,
+        breed_id: payload.cat.breed_id,
+    };
+
+    let cat = crate::models::cat::add_cat(&pool, cat_from_payload)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(AuthSignUpResponse {
+                    status: Status::Error,
+                    message: e.to_string(),
+                    results: None,
+                }),
+            )
+        })?;
+
+    let session_id = get_or_generate_session_id(&pool, cat.id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(AuthSignUpResponse {
+                    status: Status::Error,
+                    message: format!("Failed to create session: {}", e),
+                    results: None,
+                }),
+            )
+        })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(AuthSignUpResponse {
+            status: Status::Ok,
+            message: "Cat registered successfully".to_string(),
+            results: Option::from(AuthSignUpResponseResults {
+                cat,
+                session_id: String::from(session_id),
+            }),
+        }),
+    ))
 }

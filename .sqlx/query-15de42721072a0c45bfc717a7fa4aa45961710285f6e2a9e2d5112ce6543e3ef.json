@@ -1,0 +1,85 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO cats (name, password, age, breed_id)\n            VALUES ($1, $2, $3, $4)\n            RETURNING\n                id,\n                name,\n                password,\n                created_at,\n                updated_at,\n                active,\n                avatar_filename,\n                biography,\n                age,\n                breed_id,\n                NULL::text AS breed_name\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "avatar_filename",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "biography",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "age",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "breed_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "breed_name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "15de42721072a0c45bfc717a7fa4aa45961710285f6e2a9e2d5112ce6543e3ef"
+}

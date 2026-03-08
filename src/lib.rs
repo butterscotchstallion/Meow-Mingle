@@ -10,6 +10,8 @@ pub mod handlers;
 pub mod hasher;
 pub mod models;
 
+use crate::cats::routes::{CATS_LIST, CAT_DETAIL};
+use crate::handlers::auth::routes::{AUTH_SIGN_IN, AUTH_SIGN_UP};
 pub use crate::handlers::cats;
 use crate::handlers::session::routes::*;
 use handlers::auth::*;
@@ -18,13 +20,11 @@ use handlers::session::*;
 
 pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
     let app = Router::new()
-        .route(cats::routes::CATS_LIST, get(cats_list_handler))
-        .route(cats::routes::CAT_DETAIL, get(cat_detail_handler))
+        .route(CATS_LIST, get(cats_list_handler))
+        .route(CAT_DETAIL, get(cat_detail_handler))
         .route(SESSION_GET_BY_ID, get(session_get_by_id_handler))
-        .route(
-            handlers::auth::routes::AUTH_SIGN_IN,
-            axum::routing::post(sign_in_handler),
-        )
+        .route(AUTH_SIGN_IN, axum::routing::post(sign_in_handler))
+        .route(AUTH_SIGN_UP, axum::routing::post(sign_up_handler))
         .with_state(pool);
 
     Ok(app)
