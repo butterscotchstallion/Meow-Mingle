@@ -20,7 +20,7 @@ pub async fn session_get_by_id_handler(
     let session = sqlx::query_as!(
         Session,
         r#"
-            SELECT id, cat_id, created_at, updated_at, active
+            SELECT *
             FROM sessions
             WHERE id = $1
         "#,

@@ -1,5 +1,6 @@
 use crate::hasher;
-use crate::models::cat::Cat;
+use crate::models::cat::{get_cat_by_username, Cat};
+use crate::models::session::get_or_generate_session_id;
 use crate::models::status::Status;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -16,21 +17,21 @@ pub struct AuthPayload {
 
 #[derive(Serialize)]
 pub struct AuthResponse {
-    status: Status,
-    message: String,
+    pub(crate) status: Status,
+    pub(crate) message: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct AuthSessionInfo {
     pub session_id: String,
     pub cat: Cat,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct AuthResponseWithSessionInfo {
-    status: Status,
-    message: String,
-    results: AuthSessionInfo,
+    pub status: String,
+    pub message: String,
+    pub results: AuthSessionInfo,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -47,24 +48,18 @@ pub async fn login_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthResponse>)> {
-    // 1. Fetch user by username
-    let row = sqlx::query!(
-        "SELECT password FROM cats WHERE username = $1",
-        payload.username
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e: sqlx::Error| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(AuthResponse {
-                status: Status::Error,
-                message: e.to_string(),
-            }),
-        )
-    })?;
-
-    let user_row = match row {
+    let cat_result = get_cat_by_username(&pool, payload.username)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(AuthResponse {
+                    status: Status::Error,
+                    message: e.to_string(),
+                }),
+            )
+        })?;
+    let cat_row = match cat_result {
         Some(r) => r,
         None => {
             return Err((
@@ -78,7 +73,7 @@ pub async fn login_handler(
     };
 
     // 2. Verify password
-    let is_valid = hasher::verify_password(&payload.password, &user_row.password).map_err(|e| {
+    let is_valid = hasher::verify_password(&payload.password, &cat_row.password).map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(AuthResponse {
@@ -89,11 +84,26 @@ pub async fn login_handler(
     })?;
 
     if is_valid {
+        let session_id = get_or_generate_session_id(&pool, cat_row.id)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(AuthResponse {
+                        status: Status::Error,
+                        message: e.to_string(),
+                    }),
+                )
+            })?;
         Ok((
             StatusCode::OK,
-            Json(AuthResponse {
-                status: Status::Ok,
+            Json(AuthResponseWithSessionInfo {
+                status: String::from("OK"),
                 message: "Login successful".to_string(),
+                results: AuthSessionInfo {
+                    session_id: String::from(session_id),
+                    cat: cat_row,
+                },
             }),
         ))
     } else {
