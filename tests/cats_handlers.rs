@@ -1,9 +1,8 @@
-use crate::helpers::get_server;
 use axum::http::StatusCode;
 use meow_mingle::cats::{routes, CatDetailResponse, CatsListResponse};
 use meow_mingle::models::status::Status;
-
-mod helpers;
+mod common;
+use common::helpers::get_server;
 
 #[tokio::test]
 async fn test_cats_list_returns_200() {
@@ -27,8 +26,8 @@ async fn test_cats_list_response_shape() {
 
 #[tokio::test]
 async fn test_cats_get_cat_by_name() {
-    let cfg = meow_mingle::config::load_config();
     let server = get_server().await;
+    let cfg = meow_mingle::config::load_config();
     let url = routes::CAT_DETAIL.replace("{name}", &*cfg.test_users.admin_username.to_string());
     let response = server.get(&url).await;
     let body = response.json::<CatDetailResponse>();

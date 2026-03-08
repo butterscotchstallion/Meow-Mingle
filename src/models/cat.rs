@@ -3,7 +3,7 @@ use sqlx::types::Uuid;
 use sqlx::Error;
 use time::serde::rfc3339;
 
-#[derive(serde::Serialize, Debug, serde::Deserialize)]
+#[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq)]
 pub struct Cat {
     pub id: Uuid,
     pub name: String,

@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT c.*, b.name AS breed_name\n            FROM cats c\n            JOIN sessions s ON c.id = s.cat_id\n            JOIN cat_breeds b ON c.breed_id = b.id\n            WHERE s.active = true\n            AND (\n                s.created_at >= DATE_TRUNC('month', current_date - interval '1' month)\n                OR\n                s.updated_at >= DATE_TRUNC('month', current_date - interval '1' month)\n            )\n            AND s.session_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "avatar_filename",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "biography",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "age",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "breed_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "breed_name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "00008c4d1cd6cb34e830c2e5425313eba75e09b5c38f9ae2e4d94b6d275e838d"
+}

@@ -1,10 +1,10 @@
-use crate::models::session::Session;
+use crate::cats::CatDetailResponse;
+use crate::models::cat::Cat;
 use crate::models::status::Status;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -16,13 +16,21 @@ pub mod routes {
 pub async fn session_get_by_id_handler(
     State(pool): State<PgPool>,
     Path(session_id): Path<Uuid>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let session = sqlx::query_as!(
-        Session,
+) -> Result<impl IntoResponse, (StatusCode, Json<CatDetailResponse>)> {
+    let cat = sqlx::query_as!(
+        Cat,
         r#"
-            SELECT *
-            FROM sessions
-            WHERE id = $1
+            SELECT c.*, b.name AS breed_name
+            FROM cats c
+            JOIN sessions s ON c.id = s.cat_id
+            JOIN cat_breeds b ON c.breed_id = b.id
+            WHERE s.active = true
+            AND (
+                s.created_at >= DATE_TRUNC('month', current_date - interval '1' month)
+                OR
+                s.updated_at >= DATE_TRUNC('month', current_date - interval '1' month)
+            )
+            AND s.session_id = $1
         "#,
         session_id as Uuid
     )
@@ -31,27 +39,30 @@ pub async fn session_get_by_id_handler(
     .map_err(|e: sqlx::Error| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "status": Status::Error,
-                "message": e.to_string()
-            })),
+            Json(CatDetailResponse {
+                status: Status::Error,
+                message: Some(e.to_string()),
+                results: None,
+            }),
         )
     })?;
 
-    match session {
-        Some(session) => Ok((
+    match cat {
+        Some(cat) => Ok((
             StatusCode::OK,
-            Json(json!({
-                "status": Status::Ok,
-                "result": session
-            })),
+            Json(CatDetailResponse {
+                status: Status::Ok,
+                message: None,
+                results: Some(cat),
+            }),
         )),
         None => Err((
             StatusCode::NOT_FOUND,
-            Json(json!({
-                "status": Status::Error,
-                "message": "session not found"
-            })),
+            Json(CatDetailResponse {
+                status: Status::Error,
+                message: Some("Session not found".to_string()),
+                results: None,
+            }),
         )),
     }
 }
