@@ -51,5 +51,6 @@ async fn test_login_with_config_user() {
     assert_eq!(body.status, "OK");
     assert_eq!(body.message, "Login successful");
     assert_eq!(body.results.cat.username, cfg.test_users.admin_username);
+    assert_eq!(body.results.cat.password, "");
     assert_eq!(body.results.session_id.len(), 36);
 }
