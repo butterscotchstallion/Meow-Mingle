@@ -1,6 +1,6 @@
 use axum::http::StatusCode;
 use meow_mingle::config;
-use meow_mingle::handlers::auth::routes::AUTH_LOGIN;
+use meow_mingle::handlers::auth::routes::AUTH_SIGN_IN;
 use meow_mingle::handlers::auth::AuthLoginPayload;
 use serde_json::json;
 
@@ -16,7 +16,7 @@ async fn test_login_invalid_credentials_returns_401() {
         name: "nonexistent_cat".to_string(),
         password: "wrong password".to_string(),
     };
-    let response = server.post(AUTH_LOGIN).json(&payload).await;
+    let response = server.post(AUTH_SIGN_IN).json(&payload).await;
 
     response.assert_status(StatusCode::UNAUTHORIZED);
     let body = response.json::<serde_json::Value>();
@@ -27,7 +27,7 @@ async fn test_login_invalid_credentials_returns_401() {
 async fn test_login_missing_fields_returns_422() {
     let server = get_server().await;
     let response = server
-        .post(AUTH_LOGIN)
+        .post(AUTH_SIGN_IN)
         .json(&json!({
             "foo": "baz"
         }))

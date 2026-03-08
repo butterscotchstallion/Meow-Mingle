@@ -9,6 +9,10 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
+pub mod routes {
+    pub const AUTH_SIGN_IN: &str = "/auth/sign-in";
+}
+
 #[derive(Deserialize)]
 pub struct AuthPayload {
     pub name: String,
@@ -40,11 +44,7 @@ pub struct AuthLoginPayload {
     pub password: String,
 }
 
-pub mod routes {
-    pub const AUTH_LOGIN: &str = "/auth/login";
-}
-
-pub async fn login_handler(
+pub async fn sign_in_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthResponse>)> {
@@ -97,7 +97,7 @@ pub async fn login_handler(
             StatusCode::OK,
             Json(AuthResponseWithSessionInfo {
                 status: String::from("OK"),
-                message: "Login successful".to_string(),
+                message: "Sign in successful".to_string(),
                 results: AuthSessionInfo {
                     session_id: String::from(session_id),
                     cat: cat_row,

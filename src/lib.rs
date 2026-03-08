@@ -22,8 +22,8 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(cats::routes::CAT_DETAIL, get(cat_detail_handler))
         .route(SESSION_GET_BY_ID, get(session_get_by_id_handler))
         .route(
-            handlers::auth::routes::AUTH_LOGIN,
-            axum::routing::post(login_handler),
+            handlers::auth::routes::AUTH_SIGN_IN,
+            axum::routing::post(sign_in_handler),
         )
         .with_state(pool);
 
