@@ -4,8 +4,6 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{fmt, EnvFilter};
 
-mod hasher;
-
 pub fn setup_tracing() {
     tracing_subscriber::registry()
         .with(fmt::layer().pretty())
