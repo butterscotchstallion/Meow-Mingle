@@ -29,7 +29,7 @@ async fn test_cats_list_response_shape() {
 async fn test_cats_get_cat_by_name() {
     let cfg = meow_mingle::config::load_config();
     let server = get_server().await;
-    let url = routes::CAT_DETAIL.replace("<name>", &*cfg.test_users.admin_username.to_string());
+    let url = routes::CAT_DETAIL.replace("{name}", &*cfg.test_users.admin_username.to_string());
     let response = server.get(&url).await;
     let body = response.json::<CatDetailResponse>();
 
