@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 pub mod routes {
-    pub const SESSION_GET_BY_ID: &str = "/session/{id}";
+    pub const SESSION_GET_BY_ID: &str = "/api/v1/session/{id}";
 }
 
 #[axum::debug_handler]

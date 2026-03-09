@@ -10,8 +10,8 @@ use serde::Serialize;
 use sqlx::PgPool;
 
 pub mod routes {
-    pub const AUTH_SIGN_IN: &str = "/auth/sign-in";
-    pub const AUTH_SIGN_UP: &str = "/auth/sign-up";
+    pub const AUTH_SIGN_IN: &str = "/api/v1/auth/sign-in";
+    pub const AUTH_SIGN_UP: &str = "/api/v1/auth/sign-up";
 }
 
 #[derive(Serialize)]

@@ -8,8 +8,8 @@ use serde_json::json;
 use sqlx::PgPool;
 
 pub mod routes {
-    pub const CATS_LIST: &str = "/cats";
-    pub const CAT_DETAIL: &str = "/cats/{name}";
+    pub const CATS_LIST: &str = "/api/v1/cats";
+    pub const CAT_DETAIL: &str = "/api/v1/cats/{name}";
 }
 
 #[derive(serde::Serialize, Debug, serde::Deserialize)]
