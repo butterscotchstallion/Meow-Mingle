@@ -13,8 +13,8 @@ pub mod models;
 use crate::cats::routes::{CATS_LIST, CAT_DETAIL};
 use crate::handlers::auth::routes::{AUTH_SIGN_IN, AUTH_SIGN_UP};
 pub use crate::handlers::cats;
-use crate::handlers::matches::matches_list_handler;
-use crate::handlers::matches::routes::MATCHES_LIST;
+use crate::handlers::matches::routes::{MATCHES_LIST, MATCH_SUGGESTIONS};
+use crate::handlers::matches::{match_suggestions_handler, matches_list_handler};
 use crate::handlers::session::routes::*;
 use handlers::auth::*;
 use handlers::cats::*;
@@ -28,6 +28,7 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(AUTH_SIGN_IN, axum::routing::post(sign_in_handler))
         .route(AUTH_SIGN_UP, axum::routing::post(sign_up_handler))
         .route(MATCHES_LIST, get(matches_list_handler))
+        .route(MATCH_SUGGESTIONS, get(match_suggestions_handler))
         .with_state(pool);
 
     Ok(app)
