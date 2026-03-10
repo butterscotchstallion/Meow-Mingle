@@ -1,36 +1,27 @@
+use futures::stream::{FuturesUnordered, StreamExt};
 use meow_mingle::handlers::auth::AuthSignUpPayload;
 use meow_mingle::models::cat::NewCat;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::Rng;
-use std::env;
+use std::error::Error;
+use std::fs;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
+type BoxError = Box<dyn Error>;
+
+fn read_file_to_vec(path: &str) -> Result<Vec<String>, BoxError> {
+    let contents = fs::read_to_string(path)?;
+    Ok(contents.split_whitespace().map(|s| s.to_string()).collect())
+}
+
+async fn add_cat_request(name: String) -> Result<(), BoxError> {
     let mut rng = rand::rng();
-
-    if args.len() < 2 {
-        eprintln!("Usage: add_cat <name> [age] [breed_id]");
-        std::process::exit(1);
-    }
-
-    let name = &args[1];
-
-    // Default age to random number between 6 and 30
-    let age: i32 = args
-        .get(2)
-        .and_then(|a| a.parse().ok())
-        .unwrap_or_else(|| rng.random_range(6..=30));
-
-    // Default breed_id to Maine Coon
+    let age: i32 = rng.random_range(6..=30);
     let default_breed_id = "910ee31d-1fb6-428c-8b84-418cb8e55f20";
-
-    // Generate a random password
     let password = Alphanumeric.sample_string(&mut rng, 16);
 
     let payload = AuthSignUpPayload {
         cat: NewCat {
-            name: name.to_string(),
+            name: name.clone(),
             password: password.clone(),
             age: Some(age),
             breed_id: default_breed_id.parse()?,
@@ -45,14 +36,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     if res.status().is_success() {
-        println!("--------------------------------------------");
-        println!("Successfully registered {name} ({}y old)!", age);
-        println!("Password: {}", password);
-        println!("{:#?}", res.json::<serde_json::Value>().await?);
-        println!("--------------------------------------------");
+        println!("Successfully registered {name}!");
+        println!("Password: {}", password.clone());
+        Ok(())
     } else {
-        eprintln!("Failed to register cat. Status: {}", res.status());
-        eprintln!("{:#?}", res.text().await?);
+        let status = res.status();
+        let body = res.text().await.unwrap_or_default();
+        Err(format!("Failed to register {name} ({}): {}", status, body).into())
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), BoxError> {
+    let cats = read_file_to_vec("data/cat_names.txt")?;
+
+    let mut futures: FuturesUnordered<_> =
+        cats.into_iter().map(|cat| add_cat_request(cat)).collect();
+
+    while let Some(result) = futures.next().await {
+        result?;
     }
 
     Ok(())
