@@ -14,7 +14,7 @@ pub mod routes {
     pub const AUTH_SIGN_UP: &str = "/api/v1/auth/sign-up";
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct AuthSignInResponse {
     pub(crate) status: Status,
     pub(crate) message: String,
@@ -33,24 +33,24 @@ pub struct AuthResponseWithSessionInfo {
     pub results: AuthSessionInfo,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct AuthSignInPayload {
     pub name: String,
     pub password: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct AuthSignUpPayload {
     pub cat: NewCat,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct AuthSignUpResponseResults {
     pub cat: Cat,
     pub session_id: String,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct AuthSignUpResponse {
     pub status: Status,
     pub message: String,
@@ -58,6 +58,15 @@ pub struct AuthSignUpResponse {
 }
 
 #[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = routes::AUTH_SIGN_IN,
+    request_body = AuthSignInPayload,
+    responses(
+        (status = 200, description = "Auth sign in", body = AuthSignInResponse),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn sign_in_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<AuthSignInPayload>,
@@ -130,6 +139,15 @@ pub async fn sign_in_handler(
 }
 
 #[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = routes::AUTH_SIGN_UP,
+    request_body = AuthSignUpPayload,
+    responses(
+        (status = 200, description = "Auth sign up", body = AuthSignUpResponse),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn sign_up_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<AuthSignUpPayload>,

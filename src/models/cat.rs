@@ -3,7 +3,7 @@ use sqlx::types::Uuid;
 use sqlx::Error;
 use time::serde::rfc3339;
 
-#[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq)]
+#[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq, utoipa::ToSchema)]
 pub struct Cat {
     pub id: Uuid,
     pub name: String,
@@ -23,7 +23,7 @@ pub struct Cat {
 
 // Used when registering a new cat - we don't have every field
 // for the whole struct
-#[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq)]
+#[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq, utoipa::ToSchema)]
 pub struct NewCat {
     pub name: String,
     pub password: String,

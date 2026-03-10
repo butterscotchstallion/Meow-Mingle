@@ -2,7 +2,7 @@ use futures::stream::{FuturesUnordered, StreamExt};
 use meow_mingle::handlers::auth::AuthSignUpPayload;
 use meow_mingle::models::cat::NewCat;
 use rand::distr::{Alphanumeric, SampleString};
-use rand::Rng;
+use rand::RngExt;
 use std::error::Error;
 use std::fs;
 

@@ -4,8 +4,8 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde_json::json;
-use sqlx::error::ErrorKind;
 use sqlx::{Error, PgPool};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub mod routes {
@@ -13,13 +13,13 @@ pub mod routes {
     pub const MATCH_SUGGESTIONS: &str = "/api/v1/matches/suggestions";
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct MatchSuggestionsResponse {
     pub status: String,
     pub results: Vec<crate::models::cat::Cat>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, sqlx::Type)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(type_name = "match_status", rename_all = "lowercase")]
 pub enum MatchStatus {
     Pending,
@@ -27,7 +27,7 @@ pub enum MatchStatus {
     Declined,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct Match {
     pub id: Uuid,
     pub initiator_id: Uuid,
@@ -35,13 +35,21 @@ pub struct Match {
     pub status: MatchStatus,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct MatchesListResponse {
     pub status: String,
     pub results: Vec<Match>,
 }
 
 #[axum::debug_handler]
+#[utoipa::path(
+    get,
+    path = routes::MATCHES_LIST,
+    responses(
+        (status = 200, description = "List of all matches for a specific cat", body = MatchesListResponse),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn matches_list_handler(
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -74,6 +82,14 @@ pub async fn matches_list_handler(
 }
 
 #[axum::debug_handler]
+#[utoipa::path(
+    get,
+    path = routes::MATCH_SUGGESTIONS,
+    responses(
+        (status = 200, description = "List of match suggestions for a specific cat", body = MatchSuggestionsResponse),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn match_suggestions_handler(
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {

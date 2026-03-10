@@ -13,6 +13,17 @@ pub mod routes {
 }
 
 #[axum::debug_handler]
+#[utoipa::path(
+    get,
+    path = routes::SESSION_GET_BY_ID,
+    params(
+        ("id" = String, Path, description = "Session id")
+    ),
+    responses(
+        (status = 200, description = "Details for a specific cat", body = CatDetailResponse),
+        (status = 500, description = "Internal server error")
+    )
+)]
 pub async fn session_get_by_id_handler(
     State(pool): State<PgPool>,
     Path(session_id): Path<Uuid>,
