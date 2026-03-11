@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO cats (name, password, age, breed_id)\n            VALUES ($1, $2, $3, $4)\n            RETURNING\n                id,\n                name,\n                password,\n                created_at,\n                updated_at,\n                active,\n                avatar_filename,\n                biography,\n                age,\n                breed_id,\n                NULL::text AS breed_name\n",
+  "query": "\n        INSERT INTO cats (name, password, age, breed_id)\n            VALUES ($1, $2, $3, $4)\n            RETURNING\n                id,\n                name,\n                password,\n                created_at,\n                updated_at,\n                active,\n                avatar_filename,\n                biography,\n                age,\n                breed_id,\n                NULL::text AS breed_name\n        ",
   "describe": {
     "columns": [
       {
@@ -81,5 +81,5 @@
       null
     ]
   },
-  "hash": "15de42721072a0c45bfc717a7fa4aa45961710285f6e2a9e2d5112ce6543e3ef"
+  "hash": "70c430d5ce6707b05e834453401b56b2a50f46934c8015916a1a01a7388d27c8"
 }

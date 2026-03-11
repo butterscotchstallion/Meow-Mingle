@@ -1,9 +1,10 @@
+use crate::models::interests::{populate_interests, Interest};
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
 use sqlx::Error;
 use time::serde::rfc3339;
 
-#[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq, utoipa::ToSchema)]
+#[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq, utoipa::ToSchema, Default)]
 pub struct Cat {
     pub id: Uuid,
     pub name: String,
@@ -19,6 +20,40 @@ pub struct Cat {
     pub breed_name: Option<String>,
     pub age: Option<i32>,
     pub biography: Option<String>,
+    pub interests: Vec<Interest>,
+}
+
+pub struct CatRow {
+    pub id: Uuid,
+    pub name: String,
+    pub password: String,
+    pub created_at: Option<OffsetDateTime>,
+    pub updated_at: Option<OffsetDateTime>,
+    pub active: Option<bool>,
+    pub avatar_filename: Option<String>,
+    pub breed_id: Option<Uuid>,
+    pub breed_name: Option<String>,
+    pub age: Option<i32>,
+    pub biography: Option<String>,
+}
+
+impl From<CatRow> for Cat {
+    fn from(row: CatRow) -> Self {
+        Cat {
+            id: row.id,
+            name: row.name,
+            password: row.password,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            active: row.active,
+            avatar_filename: row.avatar_filename,
+            breed_id: row.breed_id,
+            breed_name: row.breed_name,
+            age: row.age,
+            biography: row.biography,
+            interests: vec![],
+        }
+    }
 }
 
 // Used when registering a new cat - we don't have every field
@@ -32,8 +67,8 @@ pub struct NewCat {
 }
 
 pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option<Cat>, Error> {
-    sqlx::query_as!(
-        Cat,
+    let row = sqlx::query_as!(
+        CatRow,
         r#"
         SELECT c.id,
                c.name,
@@ -53,12 +88,22 @@ pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option
         name
     )
     .fetch_optional(pool)
-    .await
+    .await?;
+
+    let mut cat = row.map(Cat::from);
+
+    if let Some(c) = cat.as_mut() {
+        let mut v = vec![std::mem::take(c)];
+        populate_interests(pool, &mut v).await?;
+        *c = v.remove(0);
+    }
+
+    Ok(cat)
 }
 
 pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {
-    sqlx::query_as!(
-        Cat,
+    let rows = sqlx::query_as!(
+        CatRow,
         r#"
         SELECT c.id,
                c.name,
@@ -76,12 +121,17 @@ pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {
         "#
     )
     .fetch_all(pool)
-    .await
+    .await?;
+
+    let mut cats: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
+    populate_interests(pool, &mut cats).await?;
+
+    Ok(cats)
 }
 
 pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
     let new_cat = sqlx::query_as!(
-        Cat,
+        CatRow,
         r"
         INSERT INTO cats (name, password, age, breed_id)
             VALUES ($1, $2, $3, $4)
@@ -97,7 +147,7 @@ pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
                 age,
                 breed_id,
                 NULL::text AS breed_name
-",
+        ",
         cat.name,
         cat.password,
         cat.age,
@@ -105,5 +155,5 @@ pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
     )
     .fetch_one(pool)
     .await?;
-    Ok(new_cat)
+    Ok(Cat::from(new_cat))
 }

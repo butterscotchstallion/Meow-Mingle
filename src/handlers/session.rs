@@ -1,5 +1,6 @@
 use crate::cats::CatDetailResponse;
-use crate::models::cat::Cat;
+use crate::models::cat::{Cat, CatRow};
+use crate::models::interests::populate_interests;
 use crate::models::status::Status;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -28,8 +29,8 @@ pub async fn session_get_by_id_handler(
     State(pool): State<PgPool>,
     Path(session_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<CatDetailResponse>)> {
-    let cat = sqlx::query_as!(
-        Cat,
+    let row = sqlx::query_as!(
+        CatRow,
         r#"
             SELECT c.*, b.name AS breed_name
             FROM cats c
@@ -57,6 +58,22 @@ pub async fn session_get_by_id_handler(
             }),
         )
     })?;
+
+    let mut cat = row.map(Cat::from);
+    if let Some(c) = cat.as_mut() {
+        let mut v = vec![std::mem::take(c)];
+        populate_interests(&pool, &mut v).await.map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(CatDetailResponse {
+                    status: Status::Error,
+                    message: Some(e.to_string()),
+                    results: None,
+                }),
+            )
+        })?;
+        *c = v.remove(0);
+    }
 
     match cat {
         Some(cat) => Ok((

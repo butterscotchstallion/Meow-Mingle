@@ -1,3 +1,5 @@
+use crate::models::cat::{Cat, CatRow};
+use crate::models::interests::populate_interests;
 use crate::models::status::Status;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -16,7 +18,7 @@ pub mod routes {
 #[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct MatchSuggestionsResponse {
     pub status: String,
-    pub results: Vec<crate::models::cat::Cat>,
+    pub results: Vec<Cat>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, sqlx::Type, utoipa::ToSchema)]
@@ -93,8 +95,8 @@ pub async fn matches_list_handler(
 pub async fn match_suggestions_handler(
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let suggestions = sqlx::query_as!(
-        crate::models::cat::Cat,
+    let rows = sqlx::query_as!(
+        CatRow,
         r#"
         SELECT c.id,
                c.name,
@@ -125,6 +127,19 @@ pub async fn match_suggestions_handler(
             })),
         )
     })?;
+
+    let mut suggestions: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
+    populate_interests(&pool, &mut suggestions)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "status": Status::Error,
+                    "message": e.to_string()
+                })),
+            )
+        })?;
 
     Ok((
         StatusCode::OK,
