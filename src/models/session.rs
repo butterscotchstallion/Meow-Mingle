@@ -6,11 +6,13 @@ use uuid::Uuid;
 #[derive(serde::Serialize)]
 pub(crate) struct Session {
     pub id: Option<Uuid>,
+    #[serde(rename = "sessionId")]
     pub session_id: Uuid,
+    #[serde(rename = "catId")]
     pub cat_id: Option<Uuid>,
-    #[serde(with = "rfc3339::option")]
+    #[serde(with = "rfc3339::option", rename = "createdAt")]
     pub created_at: Option<OffsetDateTime>,
-    #[serde(with = "rfc3339::option")]
+    #[serde(with = "rfc3339::option", rename = "updatedAt")]
     pub updated_at: Option<OffsetDateTime>,
     pub active: Option<bool>,
 }

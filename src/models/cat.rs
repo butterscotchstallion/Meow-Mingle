@@ -10,13 +10,16 @@ pub struct Cat {
     pub name: String,
     #[serde(skip_serializing, default)]
     pub password: String,
-    #[serde(with = "rfc3339::option")]
+    #[serde(with = "rfc3339::option", rename = "createdAt")]
     pub created_at: Option<OffsetDateTime>,
-    #[serde(with = "rfc3339::option")]
+    #[serde(with = "rfc3339::option", rename = "updatedAt")]
     pub updated_at: Option<OffsetDateTime>,
     pub active: Option<bool>,
+    #[serde(rename = "avatarFilename")]
     pub avatar_filename: Option<String>,
+    #[serde(rename = "breedId")]
     pub breed_id: Option<Uuid>,
+    #[serde(rename = "breedName")]
     pub breed_name: Option<String>,
     pub age: Option<i32>,
     pub biography: Option<String>,
