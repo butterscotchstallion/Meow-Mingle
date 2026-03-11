@@ -43,7 +43,7 @@ pub async fn get_cat_interests_map(
 
 pub async fn populate_interests(
     pool: &PgPool,
-    cats: &mut Vec<crate::models::cat::Cat>,
+    cats: &mut [crate::models::cat::Cat],
 ) -> Result<(), sqlx::Error> {
     let mut map = get_cat_interests_map(pool).await?;
     for cat in cats.iter_mut() {
