@@ -27,10 +27,10 @@ pub async fn get_session_id_and_verify(name: String, password: String) -> String
     //     panic!("Failed to extract session ID from cookie");
     // };
     let cookies = response.cookies();
-    let session_id = get_session_id_from_cookie(cookies);
+    let session_id = get_session_id_from_cookie(&cookies);
 
     assert_eq!(results.session_id.len(), 36);
-    assert_eq!(session_id, results.session_id.as_str());
+    assert_eq!(session_id, Some(results.session_id.to_string()));
     assert_eq!(body.status, "OK");
     assert_eq!(body.message, "Sign in successful");
     assert_eq!(results.cat.name, cat_name);

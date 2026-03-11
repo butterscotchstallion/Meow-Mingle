@@ -44,6 +44,8 @@ pub async fn get_or_generate_session_id(
     Ok(session_id)
 }
 
-pub fn get_session_id_from_cookie(cookies: cookie::CookieJar) -> &str {
-    cookies.get(SESSION_COOKIE_NAME).unwrap().value()
+pub fn get_session_id_from_cookie(cookies: &cookie::CookieJar) -> Option<String> {
+    cookies
+        .get(SESSION_COOKIE_NAME)
+        .map(|c| c.value().to_string())
 }
