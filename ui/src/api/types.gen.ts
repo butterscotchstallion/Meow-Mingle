@@ -38,6 +38,7 @@ export type Cat = {
     breed_name?: string | null;
     created_at?: string | null;
     id: string;
+    interests: Array<Interest>;
     name: string;
     updated_at?: string | null;
 };
@@ -51,6 +52,11 @@ export type CatDetailResponse = {
 export type CatsListResponse = {
     results: Array<Cat>;
     status: string;
+};
+
+export type Interest = {
+    id: string;
+    name: string;
 };
 
 export type Match = {
@@ -161,12 +167,12 @@ export type CatDetailHandlerData = {
     body?: never;
     path: {
         /**
-         * Cat name
+         * Cat ID
          */
-        name: string;
+        id: string;
     };
     query?: never;
-    url: '/api/v1/cats/{name}';
+    url: '/api/v1/cats/{id}';
 };
 
 export type CatDetailHandlerErrors = {

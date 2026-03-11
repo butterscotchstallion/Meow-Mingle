@@ -38,7 +38,7 @@ export const signUpHandler = <ThrowOnError extends boolean = false>(options: Opt
 
 export const catsListHandler = <ThrowOnError extends boolean = false>(options?: Options<CatsListHandlerData, ThrowOnError>) => (options?.client ?? client).get<CatsListHandlerResponses, CatsListHandlerErrors, ThrowOnError>({ url: '/api/v1/cats', ...options });
 
-export const catDetailHandler = <ThrowOnError extends boolean = false>(options: Options<CatDetailHandlerData, ThrowOnError>) => (options.client ?? client).get<CatDetailHandlerResponses, CatDetailHandlerErrors, ThrowOnError>({ url: '/api/v1/cats/{name}', ...options });
+export const catDetailHandler = <ThrowOnError extends boolean = false>(options: Options<CatDetailHandlerData, ThrowOnError>) => (options.client ?? client).get<CatDetailHandlerResponses, CatDetailHandlerErrors, ThrowOnError>({ url: '/api/v1/cats/{id}', ...options });
 
 export const matchesListHandler = <ThrowOnError extends boolean = false>(options?: Options<MatchesListHandlerData, ThrowOnError>) => (options?.client ?? client).get<MatchesListHandlerResponses, MatchesListHandlerErrors, ThrowOnError>({ url: '/api/v1/matches', ...options });
 
