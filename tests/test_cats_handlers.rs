@@ -8,6 +8,7 @@ use common::helpers::get_server;
 async fn test_cats_list_returns_200() {
     let server = get_server().await;
     let response = server.get(routes::CATS_LIST).await;
+
     response.assert_status(StatusCode::OK);
 
     let body = response.json::<serde_json::Value>();
@@ -18,6 +19,9 @@ async fn test_cats_list_returns_200() {
 async fn test_cats_list_response_shape() {
     let server = get_server().await;
     let response = server.get(routes::CATS_LIST).await;
+
+    response.assert_status(StatusCode::OK);
+
     let body = response.json::<CatsListResponse>();
 
     assert_eq!(body.status, "OK");
@@ -38,8 +42,9 @@ async fn test_cats_get_cat_detail() {
     let url = routes::CAT_DETAIL.replace("{id}", &cat_id);
     let response = server.get(&url).await;
 
+    response.assert_status(StatusCode::OK);
+
     assert_eq!(cat_id.len(), 36, "Expected a UUID, but got {}", cat_id);
-    assert_eq!(response.status_code(), StatusCode::OK);
 
     let body = response.json::<CatDetailResponse>();
 
