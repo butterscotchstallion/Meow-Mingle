@@ -66,8 +66,43 @@ pub struct NewCat {
     pub age: Option<i32>,
 }
 
+pub async fn get_cat_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Option<Cat>, Error> {
+    let row: Option<CatRow> = sqlx::query_as!(
+        CatRow,
+        r#"
+        SELECT c.id,
+               c.name,
+               c.password,
+               c.created_at,
+               c.updated_at,
+               c.active,
+               c.avatar_filename,
+               c.biography,
+               c.age,
+               cat_breeds.id AS breed_id,
+               cat_breeds.name AS breed_name
+        FROM cats c
+        JOIN cat_breeds ON c.breed_id = cat_breeds.id
+        WHERE c.id = $1
+        "#,
+        id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    let mut cat = row.map(Cat::from);
+
+    if let Some(c) = cat.as_mut() {
+        let mut v = vec![std::mem::take(c)];
+        populate_interests(pool, &mut v).await?;
+        *c = v.remove(0);
+    }
+
+    Ok(cat)
+}
+
 pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option<Cat>, Error> {
-    let row = sqlx::query_as!(
+    let row: Option<CatRow> = sqlx::query_as!(
         CatRow,
         r#"
         SELECT c.id,

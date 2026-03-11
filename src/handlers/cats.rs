@@ -1,4 +1,4 @@
-use crate::models::cat::{get_cat_by_name, get_cats};
+use crate::models::cat::{get_cat_by_id, get_cats};
 use crate::models::status::Status;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -7,6 +7,7 @@ use axum::Json;
 use serde_json::json;
 use sqlx::PgPool;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 pub mod routes {
     pub const CATS_LIST: &str = "/api/v1/cats";
@@ -70,10 +71,10 @@ pub async fn cats_list_handler(
 )]
 pub async fn cat_detail_handler(
     State(pool): State<PgPool>,
-    Path(name): Path<String>,
+    Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<CatDetailResponse>)> {
-    tracing::info!("Getting cat detail for {}", name);
-    let cat = get_cat_by_name(&pool, name).await.map_err(|e| {
+    tracing::info!("Getting cat detail for {}", id);
+    let cat = get_cat_by_id(&pool, id).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(CatDetailResponse {
