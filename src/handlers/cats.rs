@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 pub mod routes {
     pub const CATS_LIST: &str = "/api/v1/cats";
-    pub const CAT_DETAIL: &str = "/api/v1/cats/{name}";
+    pub const CAT_DETAIL: &str = "/api/v1/cats/{id}";
 }
 
 #[derive(serde::Serialize, Debug, serde::Deserialize, ToSchema)]
@@ -62,7 +62,7 @@ pub async fn cats_list_handler(
     get,
     path = routes::CAT_DETAIL,
     params(
-        ("name" = String, Path, description = "Cat name")
+        ("id" = String, Path, description = "Cat ID")
     ),
     responses(
         (status = 200, description = "Details for a specific cat", body = CatDetailResponse),

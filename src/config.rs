@@ -10,6 +10,10 @@ pub struct AppConfig {
 pub struct ConfigUsers {
     pub admin_username: String,
     pub admin_password: String,
+    pub admin_id: String,
+    pub unprivileged_username: String,
+    pub unprivileged_password: String,
+    pub unprivileged_id: String,
 }
 
 pub fn load_config() -> AppConfig {

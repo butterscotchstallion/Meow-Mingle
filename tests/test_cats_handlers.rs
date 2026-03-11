@@ -21,15 +21,26 @@ async fn test_cats_list_response_shape() {
     let body = response.json::<CatsListResponse>();
 
     assert_eq!(body.status, "OK");
-    assert!(body.results.len() > 0);
+    assert!(!body.results.is_empty());
 }
 
 #[tokio::test]
-async fn test_cats_get_cat_by_name() {
+async fn test_cats_get_cat_detail() {
     let server = get_server().await;
     let cfg = meow_mingle::config::load_config();
-    let url = routes::CAT_DETAIL.replace("{name}", &*cfg.test_users.admin_username.to_string());
+    let cat_id = cfg.test_users.unprivileged_id.to_string();
+
+    assert!(
+        routes::CAT_DETAIL.contains("{id}"),
+        "cat detail URL doesn't have id!"
+    );
+
+    let url = routes::CAT_DETAIL.replace("{id}", &cat_id);
     let response = server.get(&url).await;
+
+    assert_eq!(cat_id.len(), 36, "Expected a UUID, but got {}", cat_id);
+    assert_eq!(response.status_code(), StatusCode::OK);
+
     let body = response.json::<CatDetailResponse>();
 
     let cat = body
@@ -37,5 +48,7 @@ async fn test_cats_get_cat_by_name() {
         .as_ref()
         .expect("Expected a cat in the response results, but got None");
     assert_eq!(body.status, Status::Ok);
-    assert_eq!(cat.name, cfg.test_users.admin_username);
+    assert_eq!(cat.name, cfg.test_users.unprivileged_username);
+    assert_eq!(String::from(cat.id), cat_id);
+    assert!(!cat.interests.is_empty());
 }
