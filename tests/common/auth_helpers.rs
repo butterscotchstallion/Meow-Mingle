@@ -2,6 +2,7 @@ use crate::common::helpers::get_server;
 use axum::http::StatusCode;
 use meow_mingle::handlers::auth::routes::AUTH_SIGN_IN;
 use meow_mingle::handlers::auth::{AuthResponseWithSessionInfo, AuthSignInPayload};
+use meow_mingle::models::session::get_session_id_from_cookie;
 
 #[allow(dead_code)]
 pub async fn get_session_id_and_verify(name: String, password: String) -> String {
@@ -19,12 +20,14 @@ pub async fn get_session_id_and_verify(name: String, password: String) -> String
     let body = response.json::<AuthResponseWithSessionInfo>();
     let results = &body.results;
 
-    let cookie_value = response
-        .cookie(meow_mingle::models::session::SESSION_COOKIE_NAME)
-        .to_string();
-    let Some((_, session_id)) = cookie_value.split_once('=') else {
-        panic!("Failed to extract session ID from cookie");
-    };
+    // let cookie_value = response
+    //     .cookie(meow_mingle::models::session::SESSION_COOKIE_NAME)
+    //     .to_string();
+    // let Some((_, session_id)) = cookie_value.split_once('=') else {
+    //     panic!("Failed to extract session ID from cookie");
+    // };
+    let cookies = response.cookies();
+    let session_id = get_session_id_from_cookie(cookies);
 
     assert_eq!(results.session_id.len(), 36);
     assert_eq!(session_id, results.session_id.as_str());

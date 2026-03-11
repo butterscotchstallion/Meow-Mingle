@@ -10,6 +10,7 @@ dependencies = [
  "axum",
  "axum-test",
  "config",
+ "cookie",
  "dotenv",
  "futures",
  "once_cell",

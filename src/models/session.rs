@@ -43,3 +43,7 @@ pub async fn get_or_generate_session_id(
     .rows_affected();
     Ok(session_id)
 }
+
+pub fn get_session_id_from_cookie(cookies: cookie::CookieJar) -> &str {
+    cookies.get(SESSION_COOKIE_NAME).unwrap().value()
+}
