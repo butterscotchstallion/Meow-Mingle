@@ -2,6 +2,8 @@ use sqlx::types::time::OffsetDateTime;
 use time::serde::rfc3339;
 use uuid::Uuid;
 
+pub const SESSION_COOKIE_NAME: &str = "MM_SESSION_ID";
+
 #[allow(dead_code)]
 #[derive(serde::Serialize)]
 pub(crate) struct Session {

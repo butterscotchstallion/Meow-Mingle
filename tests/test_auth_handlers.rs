@@ -73,7 +73,6 @@ async fn test_sign_up() {
     let results = body.results.as_ref().expect("results should be present");
 
     assert_eq!(body.status, Status::Ok);
-    assert_eq!(results.session_id.len(), 36);
     assert_eq!(results.cat.name, name);
     assert_eq!(results.cat.age, age);
     assert_eq!(

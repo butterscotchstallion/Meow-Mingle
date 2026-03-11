@@ -3,7 +3,8 @@ use crate::models::cat::{get_cat_by_name, Cat, NewCat};
 use crate::models::session::get_or_generate_session_id;
 use crate::models::status::Status;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::header::SET_COOKIE;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::Serialize;
@@ -116,8 +117,20 @@ pub async fn sign_in_handler(
                     }),
                 )
             })?;
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            SET_COOKIE,
+            format!(
+                "{}={}",
+                crate::models::session::SESSION_COOKIE_NAME,
+                session_id
+            )
+            .parse()
+            .unwrap(),
+        );
         Ok((
             StatusCode::OK,
+            headers,
             Json(AuthResponseWithSessionInfo {
                 status: String::from("OK"),
                 message: "Sign in successful".to_string(),

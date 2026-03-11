@@ -1,10 +1,10 @@
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use serde_json::json;
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
@@ -95,6 +95,7 @@ pub async fn matches_list_handler(
 pub async fn match_suggestions_handler(
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    // TODO: get currently logged in user and filter on that here
     let rows = sqlx::query_as!(
         CatRow,
         r#"

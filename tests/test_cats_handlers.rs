@@ -1,5 +1,5 @@
 use axum::http::StatusCode;
-use meow_mingle::cats::{routes, CatDetailResponse, CatsListResponse};
+use meow_mingle::cats::{CatDetailResponse, CatsListResponse, routes};
 use meow_mingle::models::status::Status;
 mod common;
 use common::helpers::get_server;
