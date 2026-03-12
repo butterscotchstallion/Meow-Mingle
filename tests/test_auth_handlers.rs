@@ -81,3 +81,6 @@ async fn test_sign_up() {
     );
     assert_eq!(results.cat.password, "");
 }
+
+#[tokio::test]
+async fn test_session_id_cookie_check_with_no_cookie() {}

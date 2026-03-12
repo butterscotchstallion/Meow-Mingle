@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "argon2",
  "axum",
+ "axum-cookie",
  "axum-test",
  "config",
  "cookie",
@@ -179,6 +180,19 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "axum-cookie"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c687fa82965c81556c57eb0f7fa71f11058b4bc7cc18adee10b7f7c19f4c59b9"
+dependencies = [
+ "axum-core",
+ "cookie-rs",
+ "http",
+ "tower-layer",
+ "tower-service",
 ]
 
 [[package]]
@@ -448,6 +462,12 @@ dependencies = [
  "time",
  "version_check",
 ]
+
+[[package]]
+name = "cookie-rs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69deedbff42d34777a2c86794e57629898a686d84efcc28dfa8fbb515c8884ce"
 
 [[package]]
 name = "core-foundation"

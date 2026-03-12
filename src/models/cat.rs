@@ -1,4 +1,4 @@
-use crate::models::interests::{populate_interests, Interest};
+use crate::models::interests::{populate_interests, with_interests, Interest};
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
 use sqlx::Error;
@@ -93,15 +93,7 @@ pub async fn get_cat_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Option<Cat>,
     .fetch_optional(pool)
     .await?;
 
-    let mut cat = row.map(Cat::from);
-
-    if let Some(c) = cat.as_mut() {
-        let mut v = vec![std::mem::take(c)];
-        populate_interests(pool, &mut v).await?;
-        *c = v.remove(0);
-    }
-
-    Ok(cat)
+    with_interests(pool, row).await
 }
 
 pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option<Cat>, Error> {
@@ -128,15 +120,7 @@ pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option
     .fetch_optional(pool)
     .await?;
 
-    let mut cat = row.map(Cat::from);
-
-    if let Some(c) = cat.as_mut() {
-        let mut v = vec![std::mem::take(c)];
-        populate_interests(pool, &mut v).await?;
-        *c = v.remove(0);
-    }
-
-    Ok(cat)
+    with_interests(pool, row).await
 }
 
 pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {

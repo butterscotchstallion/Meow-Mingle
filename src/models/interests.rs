@@ -1,4 +1,5 @@
-use sqlx::PgPool;
+use crate::models::cat::{Cat, CatRow};
+use sqlx::{Error, PgPool};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -50,4 +51,17 @@ pub async fn populate_interests(
         cat.interests = map.remove(&cat.id).unwrap_or_default();
     }
     Ok(())
+}
+
+pub async fn with_interests(
+    pool: &sqlx::PgPool,
+    row: Option<CatRow>,
+) -> Result<Option<Cat>, Error> {
+    let mut cat = row.map(Cat::from);
+    if let Some(c) = cat.as_mut() {
+        let mut v = vec![std::mem::take(c)];
+        populate_interests(pool, &mut v).await?;
+        *c = v.remove(0);
+    }
+    Ok(cat)
 }

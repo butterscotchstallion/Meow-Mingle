@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.age,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        LEFT JOIN matches m\n            ON (m.initiator_id = c.id OR m.target_id = c.id)\n        WHERE m.id IS NULL\n        ",
+  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.age,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        JOIN sessions s ON c.id = s.cat_id\n        WHERE s.session_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -60,7 +60,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
@@ -76,5 +78,5 @@
       true
     ]
   },
-  "hash": "c147e877ef9eb5b07bd8fe989037ab626f83fc96633d239a80121e0fd0c86d7b"
+  "hash": "65a9365ee44b88d2c3b7e964bd8e86eb8d908233187485dc3493e2c356f4a355"
 }

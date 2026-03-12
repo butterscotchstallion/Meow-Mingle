@@ -1,10 +1,12 @@
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
+use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::Json;
+use axum_cookie::CookieManager;
 use serde_json::json;
 use sqlx::{Error, PgPool};
 use utoipa::ToSchema;
@@ -94,8 +96,21 @@ pub async fn matches_list_handler(
 )]
 pub async fn match_suggestions_handler(
     State(pool): State<PgPool>,
+    cookie_manager: CookieManager,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    // TODO: get currently logged in user and filter on that here
+    let unauthorized_response = (
+        StatusCode::UNAUTHORIZED,
+        Json(json!({
+        "status": Status::Error,
+        "message": "You are not logged in or your account is inactive"
+        })),
+    );
+    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+        Ok(Some(cat)) => cat,
+        Err(_) => return Ok(unauthorized_response),
+        _ => return Ok(unauthorized_response),
+    };
+    tracing::info!("Getting suggestions for cat: {:?}", cat);
     let rows = sqlx::query_as!(
         CatRow,
         r#"
@@ -115,7 +130,9 @@ pub async fn match_suggestions_handler(
         LEFT JOIN matches m
             ON (m.initiator_id = c.id OR m.target_id = c.id)
         WHERE m.id IS NULL
-        "#
+        AND c.id = $1
+        "#,
+        cat.id
     )
     .fetch_all(&pool)
     .await

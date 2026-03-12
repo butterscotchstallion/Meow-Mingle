@@ -26,6 +26,7 @@ futures = "0.3.32"
 utoipa = { version = "5", features = ["axum_extras", "uuid", "time"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 cookie = "0.18.1"
+axum-cookie = "0.2.4"
 
 [dev-dependencies]
 axum-test = "19.1.1"

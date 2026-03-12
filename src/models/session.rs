@@ -1,3 +1,6 @@
+use crate::models::cat::{Cat, CatRow};
+use crate::models::interests::with_interests;
+use axum_cookie::CookieManager;
 use sqlx::types::time::OffsetDateTime;
 use time::serde::rfc3339;
 use uuid::Uuid;
@@ -44,8 +47,48 @@ pub async fn get_or_generate_session_id(
     Ok(session_id)
 }
 
-pub fn get_session_id_from_cookie(cookies: &cookie::CookieJar) -> Option<String> {
-    cookies
+pub fn get_session_id_from_cookie(cookie_manager: CookieManager) -> Option<Uuid> {
+    let session_id = cookie_manager
         .get(SESSION_COOKIE_NAME)
-        .map(|c| c.value().to_string())
+        .and_then(|c| Uuid::parse_str(c.value()).ok());
+
+    tracing::debug!("Session id from cookie: {:?}", session_id);
+
+    session_id
+}
+
+pub async fn get_cat_from_session_id(
+    pool: &sqlx::PgPool,
+    cookie_manager: CookieManager,
+) -> Result<Option<Cat>, sqlx::Error> {
+    let session_id = match get_session_id_from_cookie(cookie_manager) {
+        Some(id) => id,
+        None => return Ok(None),
+    };
+    tracing::debug!("Getting cat from session id: {:?}", session_id);
+    let row = sqlx::query_as!(
+        CatRow,
+        r#"
+        SELECT c.id,
+               c.name,
+               c.password,
+               c.created_at,
+               c.updated_at,
+               c.active,
+               c.avatar_filename,
+               c.biography,
+               c.age,
+               cat_breeds.id AS breed_id,
+               cat_breeds.name AS breed_name
+        FROM cats c
+        JOIN cat_breeds ON c.breed_id = cat_breeds.id
+        JOIN sessions s ON c.id = s.cat_id
+        WHERE s.session_id = $1
+        "#,
+        session_id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    with_interests(pool, row).await
 }

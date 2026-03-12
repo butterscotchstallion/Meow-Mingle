@@ -47,6 +47,7 @@ pub mod config;
 pub mod handlers;
 pub mod hasher;
 pub mod models;
+use axum_cookie::prelude::*;
 
 use crate::cats::routes::{CATS_LIST, CAT_DETAIL};
 use crate::handlers::auth::routes::{AUTH_SIGN_IN, AUTH_SIGN_UP};
@@ -67,7 +68,8 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(AUTH_SIGN_UP, axum::routing::post(sign_up_handler))
         .route(MATCHES_LIST, get(matches_list_handler))
         .route(MATCH_SUGGESTIONS, get(match_suggestions_handler))
-        .with_state(pool);
+        .with_state(pool)
+        .layer(CookieLayer::default());
 
     let swagger_router: Router = SwaggerUi::new("/swagger-ui")
         .url("/api-docs/openapi.json", ApiDoc::openapi())
