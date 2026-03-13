@@ -1,14 +1,47 @@
 use crate::models::status::Status;
-use axum::http::StatusCode;
 use axum::Json;
-use serde_json::{json, Value};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-pub fn get_unauthorized_response() -> (StatusCode, Json<Value>) {
-    (
-        StatusCode::UNAUTHORIZED,
-        Json(json!({
-            "status": Status::Error,
-            "message": "You are not logged in or your account is inactive"
-        })),
-    )
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ApiErrorBody {
+    pub status: Status,
+    pub message: String,
+}
+
+#[derive(Debug)]
+pub struct ApiError {
+    pub status_code: StatusCode,
+    pub body: ApiErrorBody,
+}
+
+impl ApiError {
+    pub fn new(status_code: StatusCode, message: impl Into<String>) -> Self {
+        Self {
+            status_code,
+            body: ApiErrorBody {
+                status: Status::Error,
+                message: message.into(),
+            },
+        }
+    }
+
+    pub fn unauthorized() -> Self {
+        Self::new(
+            StatusCode::UNAUTHORIZED,
+            "You are not logged in or your account is inactive",
+        )
+    }
+
+    pub fn internal(e: impl std::fmt::Display) -> Self {
+        Self::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+    }
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        (self.status_code, Json(self.body)).into_response()
+    }
 }

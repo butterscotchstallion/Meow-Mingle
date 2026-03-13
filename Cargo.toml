@@ -46,3 +46,6 @@ path = "src/bin/add_cat.rs"
 [lib]
 name = "meow_mingle"
 path = "src/lib.rs"
+
+[package.metadata.llvm-cov]
+ignore-filename-regex = "src/bin/.*"
