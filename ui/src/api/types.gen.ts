@@ -32,15 +32,15 @@ export type AuthSignUpResponseResults = {
 export type Cat = {
     active?: boolean | null;
     age?: number | null;
-    avatar_filename?: string | null;
+    avatarFilename?: string | null;
     biography?: string | null;
-    breed_id?: string | null;
-    breed_name?: string | null;
-    created_at?: string | null;
+    breedId?: string | null;
+    breedName?: string | null;
+    createdAt?: string | null;
     id: string;
     interests: Array<Interest>;
     name: string;
-    updated_at?: string | null;
+    updatedAt?: string | null;
 };
 
 export type CatDetailResponse = {

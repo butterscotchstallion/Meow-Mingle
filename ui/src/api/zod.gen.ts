@@ -15,15 +15,15 @@ export const zInterest = z.object({
 export const zCat = z.object({
     active: z.boolean().nullish(),
     age: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish(),
-    avatar_filename: z.string().nullish(),
+    avatarFilename: z.string().nullish(),
     biography: z.string().nullish(),
-    breed_id: z.uuid().nullish(),
-    breed_name: z.string().nullish(),
-    created_at: z.iso.datetime().nullish(),
+    breedId: z.uuid().nullish(),
+    breedName: z.string().nullish(),
+    createdAt: z.iso.datetime().nullish(),
     id: z.uuid(),
     interests: z.array(zInterest),
     name: z.string(),
-    updated_at: z.iso.datetime().nullish()
+    updatedAt: z.iso.datetime().nullish()
 });
 
 export const zAuthSignUpResponseResults = z.object({
