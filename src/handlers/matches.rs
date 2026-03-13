@@ -20,7 +20,7 @@ pub mod routes {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct MatchSuggestionsResponse {
-    pub status: String,
+    pub status: Status,
     pub results: Vec<Cat>,
 }
 
@@ -42,7 +42,7 @@ pub struct Match {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct MatchesListResponse {
-    pub status: String,
+    pub status: Status,
     pub results: Vec<Match>,
 }
 
@@ -57,13 +57,23 @@ pub struct MatchesListResponse {
 )]
 pub async fn matches_list_handler(
     State(pool): State<PgPool>,
+    cookie_manager: CookieManager,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let unauthorized_response = get_unauthorized_response();
+    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+        Ok(Some(cat)) => cat,
+        Err(_) => return Ok(unauthorized_response),
+        _ => return Ok(unauthorized_response),
+    };
     let matches = sqlx::query_as!(
         Match,
         r#"
         SELECT id, initiator_id, target_id, status AS "status: MatchStatus"
         FROM matches
-        "#
+        WHERE initiator_id = $1
+        AND matches.status != 'declined'
+        "#,
+        cat.id
     )
     .fetch_all(&pool)
     .await
@@ -76,7 +86,6 @@ pub async fn matches_list_handler(
             })),
         )
     })?;
-
     Ok((
         StatusCode::OK,
         Json(json!({
