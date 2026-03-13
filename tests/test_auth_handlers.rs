@@ -1,16 +1,14 @@
 use axum::http::StatusCode;
 use meow_mingle::config;
 use meow_mingle::handlers::auth::routes::*;
-use meow_mingle::handlers::auth::{AuthSignInPayload, AuthSignUpPayload, AuthSignUpResponse};
+use meow_mingle::handlers::auth::AuthSignInPayload;
 use serde_json::json;
-use uuid::Uuid;
 
 #[allow(dead_code)]
 mod common;
+use crate::common::auth_helpers::sign_up_and_get_session_id;
 use common::auth_helpers::get_session_id_and_verify;
 use common::helpers::get_server;
-use meow_mingle::models::cat::NewCat;
-use meow_mingle::models::status::Status;
 
 #[tokio::test]
 async fn test_sign_in_invalid_credentials_returns_401() {
@@ -51,35 +49,7 @@ async fn test_sign_in_with_config_user() {
 
 #[tokio::test]
 async fn test_sign_up() {
-    let server = get_server().await;
-    let name = Uuid::new_v4().to_string();
-    let password = name.clone();
-    let maine_coon_breed_id = "910ee31d-1fb6-428c-8b84-418cb8e55f20";
-    let age = Option::from(3);
-    let cat = NewCat {
-        name: name.clone(),
-        password: password.clone(),
-        age,
-        breed_id: maine_coon_breed_id.parse().unwrap(),
-    };
-    let response = server
-        .post(AUTH_SIGN_UP)
-        .json(&AuthSignUpPayload { cat })
-        .await;
-
-    response.assert_status(StatusCode::CREATED);
-
-    let body = response.json::<AuthSignUpResponse>();
-    let results = body.results.as_ref().expect("results should be present");
-
-    assert_eq!(body.status, Status::Ok);
-    assert_eq!(results.cat.name, name);
-    assert_eq!(results.cat.age, age);
-    assert_eq!(
-        results.cat.breed_id.unwrap().to_string(),
-        maine_coon_breed_id
-    );
-    assert_eq!(results.cat.password, "");
+    sign_up_and_get_session_id().await;
 }
 
 #[tokio::test]

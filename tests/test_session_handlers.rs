@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use meow_mingle::cats::CatDetailResponse;
 use meow_mingle::handlers::session::routes::*;
 use meow_mingle::models::status::Status;
+use tracing::log::debug;
 
 #[tokio::test]
 async fn test_session_get_by_id_returns_404_for_unknown_id() {
@@ -49,14 +50,12 @@ async fn test_get_cat_by_session_id() {
     let session_id =
         get_session_id_and_verify(name.clone(), cfg.test_users.admin_password.clone()).await;
 
-    tracing::info!("Session ID: {}", session_id);
-
     assert!(SESSION_GET_BY_ID.contains("{id}"));
     let url = SESSION_GET_BY_ID.replace("{id}", &session_id);
     let response = server.get(&url).await;
     let body = response.json::<CatDetailResponse>();
 
-    tracing::info!("Response body: {:?}", body);
+    debug!("Response body: {:?}", body);
 
     let cat = body
         .results

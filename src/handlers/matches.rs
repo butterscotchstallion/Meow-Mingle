@@ -1,3 +1,4 @@
+use crate::handlers::common::get_unauthorized_response;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
 use crate::models::session::get_cat_from_session_id;
@@ -98,13 +99,7 @@ pub async fn match_suggestions_handler(
     State(pool): State<PgPool>,
     cookie_manager: CookieManager,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let unauthorized_response = (
-        StatusCode::UNAUTHORIZED,
-        Json(json!({
-        "status": Status::Error,
-        "message": "You are not logged in or your account is inactive"
-        })),
-    );
+    let unauthorized_response = get_unauthorized_response();
     let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         Err(_) => return Ok(unauthorized_response),
