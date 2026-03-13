@@ -1,7 +1,7 @@
-use crate::models::interests::{populate_interests, with_interests, Interest};
-use sqlx::types::time::OffsetDateTime;
-use sqlx::types::Uuid;
+use crate::models::interests::{Interest, populate_interests, with_interests};
 use sqlx::Error;
+use sqlx::types::Uuid;
+use sqlx::types::time::OffsetDateTime;
 use time::serde::rfc3339;
 
 #[derive(serde::Serialize, Debug, serde::Deserialize, PartialEq, utoipa::ToSchema, Default)]
@@ -21,7 +21,8 @@ pub struct Cat {
     pub breed_id: Option<Uuid>,
     #[serde(rename = "breedName")]
     pub breed_name: Option<String>,
-    pub age: Option<i32>,
+    #[serde(with = "rfc3339::option", rename = "birthDate")]
+    pub birth_date: Option<OffsetDateTime>,
     pub biography: Option<String>,
     pub interests: Vec<Interest>,
 }
@@ -36,7 +37,7 @@ pub struct CatRow {
     pub avatar_filename: Option<String>,
     pub breed_id: Option<Uuid>,
     pub breed_name: Option<String>,
-    pub age: Option<i32>,
+    pub birth_date: Option<OffsetDateTime>,
     pub biography: Option<String>,
 }
 
@@ -52,7 +53,7 @@ impl From<CatRow> for Cat {
             avatar_filename: row.avatar_filename,
             breed_id: row.breed_id,
             breed_name: row.breed_name,
-            age: row.age,
+            birth_date: row.birth_date,
             biography: row.biography,
             interests: vec![],
         }
@@ -66,7 +67,7 @@ pub struct NewCat {
     pub name: String,
     pub password: String,
     pub breed_id: Uuid,
-    pub age: Option<i32>,
+    pub birth_date: Option<OffsetDateTime>,
 }
 
 pub async fn get_cat_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Option<Cat>, Error> {
@@ -81,7 +82,7 @@ pub async fn get_cat_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Option<Cat>,
                c.active,
                c.avatar_filename,
                c.biography,
-               c.age,
+               c.birth_date,
                cat_breeds.id AS breed_id,
                cat_breeds.name AS breed_name
         FROM cats c
@@ -108,7 +109,7 @@ pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option
                c.active,
                c.avatar_filename,
                c.biography,
-               c.age,
+               c.birth_date,
                cat_breeds.id AS breed_id,
                cat_breeds.name AS breed_name
         FROM cats c
@@ -135,7 +136,7 @@ pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {
                c.active,
                c.avatar_filename,
                c.biography,
-               c.age,
+               c.birth_date,
                cat_breeds.id AS breed_id,
                cat_breeds.name AS breed_name
         FROM cats c
@@ -155,7 +156,7 @@ pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
     let new_cat = sqlx::query_as!(
         CatRow,
         r"
-        INSERT INTO cats (name, password, age, breed_id)
+        INSERT INTO cats (name, password, birth_date, breed_id)
             VALUES ($1, $2, $3, $4)
             RETURNING
                 id,
@@ -166,13 +167,13 @@ pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
                 active,
                 avatar_filename,
                 biography,
-                age,
+                birth_date,
                 breed_id,
                 NULL::text AS breed_name
         ",
         cat.name,
         cat.password,
-        cat.age,
+        cat.birth_date,
         cat.breed_id
     )
     .fetch_one(pool)

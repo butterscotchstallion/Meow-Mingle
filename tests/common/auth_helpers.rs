@@ -7,8 +7,10 @@ use meow_mingle::handlers::auth::{
 use meow_mingle::models::cat::NewCat;
 use meow_mingle::models::status::Status;
 use names::Generator;
+use rand::random_range;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
+use time::OffsetDateTime;
 use tracing::log::info;
 use uuid::Uuid;
 
@@ -75,11 +77,12 @@ pub async fn sign_up_and_get_session_id() -> String {
     let name = generator.next().expect("Failed to generate a name");
     let password = Uuid::new_v4().to_string();
     let maine_coon_breed_id = "910ee31d-1fb6-428c-8b84-418cb8e55f20";
-    let age = Option::from(3);
+    let years_ago: i64 = random_range(6..=20);
+    let birth_date = OffsetDateTime::now_utc() - time::Duration::days(years_ago * 365);
     let cat = NewCat {
         name: name.clone(),
         password: password.clone(),
-        age,
+        birth_date: Some(birth_date),
         breed_id: maine_coon_breed_id.parse().unwrap(),
     };
 
@@ -97,7 +100,6 @@ pub async fn sign_up_and_get_session_id() -> String {
 
     assert_eq!(body.status, Status::Ok);
     assert_eq!(results.cat.name, name);
-    assert_eq!(results.cat.age, age);
     assert_eq!(
         results.cat.breed_id.unwrap().to_string(),
         maine_coon_breed_id

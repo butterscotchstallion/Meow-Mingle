@@ -1,12 +1,12 @@
 use crate::hasher;
-use crate::models::cat::{get_cat_by_name, Cat, NewCat};
+use crate::models::cat::{Cat, NewCat, get_cat_by_name};
 use crate::models::session::get_or_generate_session_id;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::State;
 use axum::http::header::SET_COOKIE;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
-use axum::Json;
 use serde::Serialize;
 use sqlx::PgPool;
 
@@ -179,7 +179,7 @@ pub async fn sign_up_handler(
     let cat_from_payload = NewCat {
         name: payload.cat.name,
         password: hashed_password,
-        age: payload.cat.age,
+        birth_date: payload.cat.birth_date,
         breed_id: payload.cat.breed_id,
     };
 

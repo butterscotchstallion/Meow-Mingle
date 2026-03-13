@@ -3,6 +3,8 @@ use futures::future::join_all;
 use meow_mingle::handlers::auth::routes::AUTH_SIGN_UP;
 use meow_mingle::handlers::auth::{AuthSignUpPayload, AuthSignUpResponse};
 use meow_mingle::models::cat::NewCat;
+use rand::RngExt;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[allow(dead_code)]
@@ -13,6 +15,9 @@ use common::helpers::get_server;
 async fn test_parallel_registration_logic() {
     let server = get_server().await;
     let names = vec![Uuid::new_v4().to_string(), Uuid::new_v4().to_string()];
+    let mut rng = rand::rng();
+    let years_ago: i64 = rng.random_range(6..=20);
+    let birth_date = OffsetDateTime::now_utc() - time::Duration::days(years_ago * 365);
 
     // Use join_all instead of tokio::spawn to avoid Send + Clone requirements on TestServer
     let tasks: Vec<_> = names
@@ -21,7 +26,7 @@ async fn test_parallel_registration_logic() {
             let cat = NewCat {
                 name: name.clone(),
                 password: "password123".to_string(),
-                age: Some(5),
+                birth_date: Some(birth_date),
                 breed_id: "910ee31d-1fb6-428c-8b84-418cb8e55f20".parse().unwrap(),
             };
             server

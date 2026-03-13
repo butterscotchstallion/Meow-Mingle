@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.age,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        WHERE c.id = $1\n        ",
+  "query": "\n        INSERT INTO cats (name, password, birth_date, breed_id)\n            VALUES ($1, $2, $3, $4)\n            RETURNING\n                id,\n                name,\n                password,\n                created_at,\n                updated_at,\n                active,\n                avatar_filename,\n                biography,\n                birth_date,\n                breed_id,\n                NULL::text AS breed_name\n        ",
   "describe": {
     "columns": [
       {
@@ -45,8 +45,8 @@
       },
       {
         "ordinal": 8,
-        "name": "age",
-        "type_info": "Int4"
+        "name": "birth_date",
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 9,
@@ -56,11 +56,14 @@
       {
         "ordinal": 10,
         "name": "breed_name",
-        "type_info": "Varchar"
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
         "Uuid"
       ]
     },
@@ -74,9 +77,9 @@
       true,
       true,
       false,
-      true,
-      true
+      false,
+      null
     ]
   },
-  "hash": "da981e03bc9dace170db067b63960392e7d9b8f2c17c4683f0340a189df87729"
+  "hash": "5581b7f28f32039857a64272b92828b21e469d398c7e3d2e41bf5ac63fe4d9d6"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.age,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        ",
+  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.birth_date,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        JOIN sessions s ON c.id = s.cat_id\n        WHERE s.session_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -45,8 +45,8 @@
       },
       {
         "ordinal": 8,
-        "name": "age",
-        "type_info": "Int4"
+        "name": "birth_date",
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 9,
@@ -60,7 +60,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
@@ -76,5 +78,5 @@
       true
     ]
   },
-  "hash": "f167339a552690cc68966702afe01ec0a065b1176aa09af7a19ae5bc562079d4"
+  "hash": "af3d576ae26c582b199831d34d0436deabbededa8e1d413bc34003e7500ce465"
 }

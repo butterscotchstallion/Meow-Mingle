@@ -2,10 +2,10 @@ use crate::cats::CatDetailResponse;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use sqlx::PgPool;
 use uuid::Uuid;
 

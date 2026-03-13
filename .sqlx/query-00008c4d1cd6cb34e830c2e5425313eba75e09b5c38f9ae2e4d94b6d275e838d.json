@@ -45,13 +45,13 @@
       },
       {
         "ordinal": 8,
-        "name": "age",
-        "type_info": "Int4"
+        "name": "breed_id",
+        "type_info": "Uuid"
       },
       {
         "ordinal": 9,
-        "name": "breed_id",
-        "type_info": "Uuid"
+        "name": "birth_date",
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 10,

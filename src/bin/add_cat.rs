@@ -1,10 +1,11 @@
 use futures::stream::{FuturesUnordered, StreamExt};
 use meow_mingle::handlers::auth::AuthSignUpPayload;
 use meow_mingle::models::cat::NewCat;
-use rand::distr::{Alphanumeric, SampleString};
 use rand::RngExt;
+use rand::distr::{Alphanumeric, SampleString};
 use std::error::Error;
 use std::fs;
+use time::OffsetDateTime;
 
 type BoxError = Box<dyn Error>;
 
@@ -15,7 +16,8 @@ fn read_file_to_vec(path: &str) -> Result<Vec<String>, BoxError> {
 
 async fn add_cat_request(name: String) -> Result<(), BoxError> {
     let mut rng = rand::rng();
-    let age: i32 = rng.random_range(6..=30);
+    let years_ago: i64 = rng.random_range(6..=20);
+    let birth_date = OffsetDateTime::now_utc() - time::Duration::days(years_ago * 365);
     let default_breed_id = "910ee31d-1fb6-428c-8b84-418cb8e55f20";
     let password = Alphanumeric.sample_string(&mut rng, 16);
 
@@ -23,7 +25,7 @@ async fn add_cat_request(name: String) -> Result<(), BoxError> {
         cat: NewCat {
             name: name.clone(),
             password: password.clone(),
-            age: Some(age),
+            birth_date: Some(birth_date),
             breed_id: default_breed_id.parse()?,
         },
     };

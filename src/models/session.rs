@@ -77,7 +77,7 @@ pub async fn get_cat_from_session_id(
                c.active,
                c.avatar_filename,
                c.biography,
-               c.age,
+               c.birth_date,
                cat_breeds.id AS breed_id,
                cat_breeds.name AS breed_name
         FROM cats c
