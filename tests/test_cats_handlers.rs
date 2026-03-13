@@ -1,34 +1,10 @@
 use axum::http::StatusCode;
 use cookie::Cookie;
-use meow_mingle::cats::{CatDetailResponse, CatsListResponse, routes};
+use meow_mingle::cats::{CatDetailResponse, routes};
 use meow_mingle::models::status::Status;
 mod common;
 use crate::common::auth_helpers::sign_up_and_get_session_id;
 use common::helpers::get_server;
-
-#[tokio::test]
-async fn test_cats_list_returns_200() {
-    let server = get_server().await;
-    let response = server.get(routes::CATS_LIST).await;
-
-    response.assert_status(StatusCode::OK);
-
-    let body = response.json::<serde_json::Value>();
-    assert_eq!(body["status"], "OK");
-}
-
-#[tokio::test]
-async fn test_cats_list_response_shape() {
-    let server = get_server().await;
-    let response = server.get(routes::CATS_LIST).await;
-
-    response.assert_status(StatusCode::OK);
-
-    let body = response.json::<CatsListResponse>();
-
-    assert_eq!(body.status, Status::Ok);
-    assert!(!body.results.is_empty());
-}
 
 #[tokio::test]
 async fn test_cats_get_cat_detail() {

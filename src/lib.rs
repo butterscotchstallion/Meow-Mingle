@@ -1,5 +1,5 @@
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 use dotenv::dotenv;
 use sqlx::{PgPool, Pool, Postgres};
 use std::env;
@@ -16,7 +16,6 @@ use utoipa_swagger_ui::SwaggerUi;
         version = "0.1.0"
     ),
     paths(
-        crate::handlers::cats::cats_list_handler,
         crate::handlers::cats::cat_detail_handler,
         crate::handlers::auth::sign_in_handler,
         crate::handlers::auth::sign_up_handler,
@@ -27,7 +26,6 @@ use utoipa_swagger_ui::SwaggerUi;
     components(
         schemas(
             crate::models::cat::Cat,
-            crate::handlers::cats::CatsListResponse,
             crate::handlers::cats::CatDetailResponse,
             crate::handlers::matches::Match,
             crate::handlers::matches::MatchStatus,
@@ -49,10 +47,10 @@ pub mod hasher;
 pub mod models;
 use axum_cookie::prelude::*;
 
-use crate::cats::routes::{CATS_LIST, CAT_DETAIL};
+use crate::cats::routes::CAT_DETAIL;
 use crate::handlers::auth::routes::{AUTH_SIGN_IN, AUTH_SIGN_UP};
 pub use crate::handlers::cats;
-use crate::handlers::matches::routes::{MATCHES_LIST, MATCH_SUGGESTIONS};
+use crate::handlers::matches::routes::{MATCH_SUGGESTIONS, MATCHES_LIST};
 use crate::handlers::matches::{match_suggestions_handler, matches_list_handler};
 use crate::handlers::session::routes::*;
 use handlers::auth::*;
@@ -61,7 +59,6 @@ use handlers::session::*;
 
 pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
     let api_router = Router::new()
-        .route(CATS_LIST, get(cats_list_handler))
         .route(CAT_DETAIL, get(cat_detail_handler))
         .route(SESSION_GET_BY_ID, get(session_get_by_id_handler))
         .route(AUTH_SIGN_IN, axum::routing::post(sign_in_handler))

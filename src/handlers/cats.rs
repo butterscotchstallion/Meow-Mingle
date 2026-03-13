@@ -1,5 +1,5 @@
 use crate::handlers::common::ApiError;
-use crate::models::cat::{get_cat_by_id, get_cats};
+use crate::models::cat::get_cat_by_id;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
@@ -7,18 +7,10 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum_cookie::CookieManager;
 use sqlx::PgPool;
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub mod routes {
-    pub const CATS_LIST: &str = "/api/v1/cats";
     pub const CAT_DETAIL: &str = "/api/v1/cats/{id}";
-}
-
-#[derive(serde::Serialize, Debug, serde::Deserialize, ToSchema)]
-pub struct CatsListResponse {
-    pub status: Status,
-    pub results: Vec<crate::models::cat::Cat>,
 }
 
 #[derive(serde::Serialize, Debug, serde::Deserialize, utoipa::ToSchema)]
@@ -26,29 +18,6 @@ pub struct CatDetailResponse {
     pub status: Status,
     pub message: Option<String>,
     pub results: Option<crate::models::cat::Cat>,
-}
-
-#[utoipa::path(
-    get,
-    path = routes::CATS_LIST,
-    responses(
-        (status = 200, description = "List of cats", body = CatsListResponse),
-        (status = 500, description = "Internal server error")
-    )
-)]
-#[axum::debug_handler]
-pub async fn cats_list_handler(
-    State(pool): State<PgPool>,
-) -> Result<(StatusCode, Json<CatsListResponse>), ApiError> {
-    let cats = get_cats(&pool).await.map_err(|e| ApiError::internal(e))?;
-
-    Ok((
-        StatusCode::OK,
-        Json(CatsListResponse {
-            status: Status::Ok,
-            results: cats,
-        }),
-    ))
 }
 
 #[axum::debug_handler]
