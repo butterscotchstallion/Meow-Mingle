@@ -6,12 +6,12 @@ tasks:
   cov:
     desc: Run test coverage
     cmds:
-      - cargo llvm-cov nextest --color always
+      - cargo llvm-cov --all-targets nextest --color always
 
   covhtml:
     desc: Run test coverage and open HTML report
     cmds:
-      - cargo llvm-cov nextest --html --open
+      - cargo llvm-cov --all-targets nextest --html --open
 
   genapi:
     desc: Generate API
