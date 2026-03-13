@@ -19,6 +19,10 @@ A cat dating app to find your purrfect match
 
 `cargo nextest run`
 
+## Run test coverage report
+
+`cargo llvm-cov nextest`
+
 ## Run password hashing utility
 
 `cargo run --bin hash_password -- "yourpassword"`
