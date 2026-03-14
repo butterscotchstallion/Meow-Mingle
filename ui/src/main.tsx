@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { PrimeReactProvider } from "primereact/api";
 import { client } from "./api/client.gen";
 import { App } from "./App";
+import { ErrorBoundary } from "./ErrorBoundary";
 import "./index.css";
 
 client.setConfig({
@@ -20,10 +21,12 @@ client.interceptors.response.use((response, request) => {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <PrimeReactProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </PrimeReactProvider>
+    <ErrorBoundary>
+      <PrimeReactProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </PrimeReactProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
