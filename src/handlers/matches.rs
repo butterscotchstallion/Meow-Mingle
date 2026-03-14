@@ -69,7 +69,8 @@ pub async fn matches_list_handler(
         r#"
         SELECT id, initiator_id, target_id, status AS "status: MatchStatus"
         FROM matches
-        WHERE initiator_id = $1
+        WHERE 1=1
+        AND (initiator_id = $1 OR target_id = $1)
         AND matches.status != 'declined'
         "#,
         cat.id
