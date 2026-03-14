@@ -15,6 +15,8 @@ pub struct Cat {
     pub created_at: Option<OffsetDateTime>,
     #[serde(with = "rfc3339::option", rename = "updatedAt")]
     pub updated_at: Option<OffsetDateTime>,
+    #[serde(with = "rfc3339::option", rename = "lastSeen")]
+    pub last_seen: Option<OffsetDateTime>,
     pub active: Option<bool>,
     #[serde(rename = "avatarFilename")]
     pub avatar_filename: Option<String>,
@@ -37,6 +39,7 @@ pub struct CatRow {
     pub password: String,
     pub created_at: Option<OffsetDateTime>,
     pub updated_at: Option<OffsetDateTime>,
+    pub last_seen: Option<OffsetDateTime>,
     pub active: Option<bool>,
     pub avatar_filename: Option<String>,
     pub breed_id: Option<Uuid>,
@@ -54,6 +57,7 @@ impl From<CatRow> for Cat {
             password: row.password,
             created_at: row.created_at,
             updated_at: row.updated_at,
+            last_seen: row.last_seen,
             active: row.active,
             avatar_filename: row.avatar_filename,
             breed_id: row.breed_id,
@@ -86,6 +90,7 @@ pub async fn get_cat_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Option<Cat>,
                c.password,
                c.created_at,
                c.updated_at,
+               c.last_seen,
                c.active,
                c.avatar_filename,
                c.biography,
@@ -114,6 +119,7 @@ pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option
                c.password,
                c.created_at,
                c.updated_at,
+               c.last_seen,
                c.active,
                c.avatar_filename,
                c.biography,
@@ -142,6 +148,7 @@ pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {
                c.password,
                c.created_at,
                c.updated_at,
+               c.last_seen,
                c.active,
                c.avatar_filename,
                c.biography,
@@ -174,6 +181,7 @@ pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
                 password,
                 created_at,
                 updated_at,
+                last_seen,
                 active,
                 avatar_filename,
                 biography,
@@ -190,4 +198,18 @@ pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
     .fetch_one(pool)
     .await?;
     Ok(Cat::from(new_cat))
+}
+
+pub async fn update_last_seen(pool: &sqlx::PgPool, cat_id: Uuid) -> Result<(), Error> {
+    sqlx::query!(
+        r#"
+        UPDATE cats
+        SET last_seen = NOW()
+        WHERE id = $1
+        "#,
+        cat_id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
 }

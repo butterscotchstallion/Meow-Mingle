@@ -74,6 +74,7 @@ pub async fn get_cat_from_session_id(
                c.password,
                c.created_at,
                c.updated_at,
+               c.last_seen,
                c.active,
                c.avatar_filename,
                c.biography,

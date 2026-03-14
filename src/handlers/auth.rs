@@ -1,5 +1,5 @@
 use crate::hasher;
-use crate::models::cat::{Cat, NewCat, get_cat_by_name};
+use crate::models::cat::{Cat, NewCat, get_cat_by_name, update_last_seen};
 use crate::models::session::get_or_generate_session_id;
 use crate::models::status::Status;
 use axum::Json;
@@ -115,6 +115,16 @@ pub async fn sign_in_handler(
     if !is_valid {
         return invalid_credentials();
     }
+
+    update_last_seen(&pool, cat_row.id).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(AuthSignInResponse {
+                status: Status::Error,
+                message: e.to_string(),
+            }),
+        )
+    })?;
 
     let session_id = get_or_generate_session_id(&pool, cat_row.id)
         .await
