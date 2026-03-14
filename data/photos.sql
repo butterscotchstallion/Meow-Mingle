@@ -4,7 +4,8 @@ create table public.photos
         constraint photos_pk
             primary key,
     "order"    integer                  default 0,
-    created_at timestamp with time zone default now()
+    created_at timestamp with time zone default now(),
+    filename   varchar(255)                                       not null
 );
 
 alter table public.photos

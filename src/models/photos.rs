@@ -1,6 +1,6 @@
-use sqlx::{Error, PgPool};
 use sqlx::types::Uuid;
 use sqlx::types::time::OffsetDateTime;
+use sqlx::{Error, PgPool};
 use std::collections::HashMap;
 use time::serde::rfc3339;
 
@@ -10,6 +10,7 @@ pub struct CatPhoto {
     pub order: Option<i32>,
     #[serde(with = "rfc3339::option", rename = "createdAt")]
     pub created_at: Option<OffsetDateTime>,
+    pub filename: String,
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -18,18 +19,18 @@ pub struct CatPhotoRow {
     pub photo_id: Uuid,
     pub order: Option<i32>,
     pub created_at: Option<OffsetDateTime>,
+    pub filename: String,
 }
 
-pub async fn get_cat_photos_map(
-    pool: &PgPool,
-) -> Result<HashMap<Uuid, Vec<CatPhoto>>, Error> {
+pub async fn get_cat_photos_map(pool: &PgPool) -> Result<HashMap<Uuid, Vec<CatPhoto>>, Error> {
     let rows = sqlx::query_as!(
         CatPhotoRow,
         r#"
         SELECT cp.cat_id,
                p.id AS photo_id,
                p."order",
-               p.created_at
+               p.created_at,
+               p.filename
         FROM cats_photos cp
         JOIN photos p ON cp.photo_id = p.id
         ORDER BY cp.cat_id, p."order" ASC NULLS LAST
@@ -45,6 +46,7 @@ pub async fn get_cat_photos_map(
             id: row.photo_id,
             order: row.order,
             created_at: row.created_at,
+            filename: row.filename,
         });
     }
 
