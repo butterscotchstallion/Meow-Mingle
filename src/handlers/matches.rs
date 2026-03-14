@@ -8,6 +8,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 
 use axum_cookie::CookieManager;
+use serde_with::{StringWithSeparator, formats::CommaSeparator, serde_as};
 use sqlx::{Error, PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -45,11 +46,14 @@ pub struct MatchSuggestionsResponse {
     pub results: Vec<Cat>,
 }
 
+#[serde_as]
 #[derive(serde::Deserialize, Default)]
 #[serde(default)]
 pub struct MatchSuggestionAgeFilter {
     pub lt: i32,
     pub gt: i32,
+    #[serde_as(as = "StringWithSeparator::<CommaSeparator, Uuid>")]
+    pub interest_ids: Vec<Uuid>,
 }
 
 #[axum::debug_handler]
@@ -152,6 +156,13 @@ pub async fn match_suggestions_handler(
         query.push(" AND c.birth_date < NOW() - ");
         query.push_bind(format!("{} years", age_filter.gt));
         query.push("::interval");
+    }
+
+    // interest_ids = only return cats that have at least one matching interest
+    if !age_filter.interest_ids.is_empty() {
+        query.push(" AND EXISTS (SELECT 1 FROM cats_interests ci WHERE ci.cat_id = c.id AND ci.interest_id = ANY(");
+        query.push_bind(age_filter.interest_ids.clone());
+        query.push("))");
     }
 
     let rows = query

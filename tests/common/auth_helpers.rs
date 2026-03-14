@@ -112,3 +112,44 @@ pub async fn sign_up_and_get_session_id() -> String {
         .expect("session id should be valid UUID")
         .to_string()
 }
+
+// Like sign_up_and_get_session_id, but also returns the cat's ID.
+// Use this when the test needs to perform DB operations on behalf of the signed-up cat.
+#[allow(dead_code)]
+pub async fn sign_up_and_get_session_and_cat_id() -> (String, Uuid) {
+    let server = get_server().await;
+    let mut generator = Generator::default();
+    let name = generator.next().expect("Failed to generate a name");
+    let password = Uuid::new_v4().to_string();
+    let maine_coon_breed_id = "910ee31d-1fb6-428c-8b84-418cb8e55f20";
+    let years_ago: i64 = random_range(6..=20);
+    let birth_date = OffsetDateTime::now_utc() - time::Duration::days(years_ago * 365);
+    let cat = NewCat {
+        name: name.clone(),
+        password: password.clone(),
+        birth_date: Some(birth_date),
+        breed_id: maine_coon_breed_id.parse().unwrap(),
+    };
+
+    let response = server
+        .post(AUTH_SIGN_UP)
+        .json(&AuthSignUpPayload { cat })
+        .await;
+
+    response.assert_status(StatusCode::CREATED);
+
+    let body = response.json::<AuthSignUpResponse>();
+    let results = body.results.as_ref().expect("results should be present");
+
+    assert_eq!(body.status, Status::Ok);
+
+    let session_id = results
+        .session_id
+        .parse::<Uuid>()
+        .expect("session id should be valid UUID")
+        .to_string();
+
+    let cat_id = results.cat.id;
+
+    (session_id, cat_id)
+}
