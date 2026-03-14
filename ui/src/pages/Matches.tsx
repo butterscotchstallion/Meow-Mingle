@@ -251,7 +251,7 @@ export function Matches() {
       try {
         const { data, error: apiError } = await matchSuggestionsHandler();
         if (apiError || !data) {
-          setError("Could not load suggestions. Please try again.");
+          setError("Could not load match suggestions. Please try again.");
           return;
         }
         setSuggestions(data.results as CatWithPhotos[]);
@@ -289,11 +289,6 @@ export function Matches() {
         >
           🐱 Meow Mingle
         </Link>
-        <span className="text-sm text-slate-500">
-          {hasCurrent
-            ? `${remaining.length} suggestion${remaining.length !== 1 ? "s" : ""}`
-            : ""}
-        </span>
       </header>
 
       {/* Main */}
@@ -345,7 +340,7 @@ export function Matches() {
               })}
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons
             <div className="flex items-center gap-8">
               <Button
                 rounded
@@ -372,11 +367,7 @@ export function Matches() {
                 }
               />
             </div>
-
-            {/* Swipe hint */}
-            <p className="text-xs text-slate-600">
-              Drag the card or use the buttons
-            </p>
+            */}
           </>
         )}
       </main>
