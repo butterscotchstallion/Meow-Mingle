@@ -65,13 +65,27 @@ pub struct AuthSignUpResponse {
     request_body = AuthSignInPayload,
     responses(
         (status = 200, description = "Auth sign in", body = AuthSignInResponse),
-        (status = 500, description = "Internal server error")
+        (status = 500, description = "Internal server error", body = AuthSignInResponse)
     )
 )]
 pub async fn sign_in_handler(
     State(pool): State<PgPool>,
     Json(payload): Json<AuthSignInPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthSignInResponse>)> {
+    let invalid_credentials = || {
+        Ok((
+            StatusCode::OK,
+            HeaderMap::new(),
+            Json(
+                serde_json::to_value(AuthSignInResponse {
+                    status: Status::Error,
+                    message: "Invalid username or password".to_string(),
+                })
+                .unwrap(),
+            ),
+        ))
+    };
+
     let cat_result = get_cat_by_name(&pool, payload.name).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -81,20 +95,13 @@ pub async fn sign_in_handler(
             }),
         )
     })?;
+
     let cat_row = match cat_result {
         Some(r) => r,
-        None => {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(AuthSignInResponse {
-                    status: Status::Error,
-                    message: "Invalid username or password".to_string(),
-                }),
-            ));
-        }
+        None => return invalid_credentials(),
     };
 
-    // 2. Verify password
+    // Verify password
     let is_valid = hasher::verify_password(&payload.password, &cat_row.password).map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -105,50 +112,49 @@ pub async fn sign_in_handler(
         )
     })?;
 
-    if is_valid {
-        let session_id = get_or_generate_session_id(&pool, cat_row.id)
-            .await
-            .map_err(|e| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(AuthSignInResponse {
-                        status: Status::Error,
-                        message: e.to_string(),
-                    }),
-                )
-            })?;
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            SET_COOKIE,
-            format!(
-                "{}={}",
-                crate::models::session::SESSION_COOKIE_NAME,
-                session_id
+    if !is_valid {
+        return invalid_credentials();
+    }
+
+    let session_id = get_or_generate_session_id(&pool, cat_row.id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(AuthSignInResponse {
+                    status: Status::Error,
+                    message: e.to_string(),
+                }),
             )
-            .parse()
-            .unwrap(),
-        );
-        Ok((
-            StatusCode::OK,
-            headers,
-            Json(AuthResponseWithSessionInfo {
+        })?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        SET_COOKIE,
+        format!(
+            "{}={}",
+            crate::models::session::SESSION_COOKIE_NAME,
+            session_id
+        )
+        .parse()
+        .unwrap(),
+    );
+
+    Ok((
+        StatusCode::OK,
+        headers,
+        Json(
+            serde_json::to_value(AuthResponseWithSessionInfo {
                 status: String::from("OK"),
                 message: "Sign in successful".to_string(),
                 results: AuthSessionInfo {
                     session_id: String::from(session_id),
                     cat: cat_row,
                 },
-            }),
-        ))
-    } else {
-        Err((
-            StatusCode::UNAUTHORIZED,
-            Json(AuthSignInResponse {
-                status: Status::Error,
-                message: "Invalid username or password".to_string(),
-            }),
-        ))
-    }
+            })
+            .unwrap(),
+        ),
+    ))
 }
 
 #[axum::debug_handler]

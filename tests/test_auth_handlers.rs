@@ -12,7 +12,7 @@ use common::helpers::get_server;
 use meow_mingle::models::status::Status;
 
 #[tokio::test]
-async fn test_sign_in_invalid_credentials_returns_401() {
+async fn test_sign_in_invalid_credentials_returns_200() {
     let server = get_server().await;
     let payload = AuthSignInPayload {
         name: "nonexistent_cat".to_string(),
@@ -20,7 +20,7 @@ async fn test_sign_in_invalid_credentials_returns_401() {
     };
     let response = server.post(AUTH_SIGN_IN).json(&payload).await;
 
-    response.assert_status(StatusCode::UNAUTHORIZED);
+    response.assert_status(StatusCode::OK);
     let body = response.json::<serde_json::Value>();
     assert_eq!(body["message"], "Invalid username or password");
 }
@@ -54,7 +54,7 @@ async fn test_sign_up() {
 }
 
 #[tokio::test]
-async fn test_sign_in_wrong_password_returns_401() {
+async fn test_sign_in_wrong_password_returns_200() {
     let cfg = config::load_config();
     let server = get_server().await;
     let payload = AuthSignInPayload {
@@ -63,13 +63,13 @@ async fn test_sign_in_wrong_password_returns_401() {
     };
     let response = server.post(AUTH_SIGN_IN).json(&payload).await;
 
-    response.assert_status(StatusCode::UNAUTHORIZED);
+    response.assert_status(StatusCode::OK);
     let body = response.json::<AuthSignUpResponse>();
     assert_eq!(body.message, "Invalid username or password");
 }
 
 #[tokio::test]
-async fn test_sign_in_empty_name_returns_401() {
+async fn test_sign_in_empty_name_returns_200() {
     let server = get_server().await;
     let payload = AuthSignInPayload {
         name: "".to_string(),
@@ -77,13 +77,13 @@ async fn test_sign_in_empty_name_returns_401() {
     };
     let response = server.post(AUTH_SIGN_IN).json(&payload).await;
 
-    response.assert_status(StatusCode::UNAUTHORIZED);
+    response.assert_status(StatusCode::OK);
     let body = response.json::<AuthSignUpResponse>();
     assert_eq!(body.message, "Invalid username or password");
 }
 
 #[tokio::test]
-async fn test_sign_in_empty_password_returns_401() {
+async fn test_sign_in_empty_password_returns_200() {
     let cfg = config::load_config();
     let server = get_server().await;
     let payload = AuthSignInPayload {
@@ -92,7 +92,7 @@ async fn test_sign_in_empty_password_returns_401() {
     };
     let response = server.post(AUTH_SIGN_IN).json(&payload).await;
 
-    response.assert_status(StatusCode::UNAUTHORIZED);
+    response.assert_status(StatusCode::OK);
     let body = response.json::<AuthSignUpResponse>();
     assert_eq!(body.message, "Invalid username or password");
 }
