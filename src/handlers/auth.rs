@@ -132,7 +132,7 @@ pub async fn sign_in_handler(
     headers.insert(
         SET_COOKIE,
         format!(
-            "{}={}",
+            "{}={}; Path=/; SameSite=None; Secure",
             crate::models::session::SESSION_COOKIE_NAME,
             session_id
         )

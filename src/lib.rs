@@ -1,9 +1,11 @@
 use axum::Router;
+use axum::http::{HeaderName, HeaderValue, Method};
 use axum::routing::get;
 use dotenv::dotenv;
 use sqlx::{PgPool, Pool, Postgres};
 use std::env;
 use std::error::Error;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -63,6 +65,18 @@ use handlers::cats::*;
 use handlers::session::*;
 
 pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
+    let cors = CorsLayer::new()
+        .allow_origin(AllowOrigin::exact(HeaderValue::from_static(
+            "http://localhost:5173",
+        )))
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers([
+            HeaderName::from_static("content-type"),
+            HeaderName::from_static("authorization"),
+            HeaderName::from_static("cookie"),
+        ])
+        .allow_credentials(true);
+
     let api_router = Router::new()
         .route(CAT_DETAIL, get(cat_detail_handler))
         .route(SESSION_GET_BY_ID, get(session_get_by_id_handler))
@@ -72,7 +86,8 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(MATCH_SUGGESTIONS, get(match_suggestions_handler))
         .route(BREEDS_LIST, get(breeds_list_handler))
         .with_state(pool)
-        .layer(CookieLayer::default());
+        .layer(CookieLayer::default())
+        .layer(cors);
 
     let swagger_router: Router = SwaggerUi::new("/swagger-ui")
         .url("/api-docs/openapi.json", ApiDoc::openapi())
