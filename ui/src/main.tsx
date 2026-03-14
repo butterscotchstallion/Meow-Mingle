@@ -11,6 +11,13 @@ client.setConfig({
   credentials: "include",
 });
 
+client.interceptors.response.use((response, request) => {
+  if (response.status === 401 && !request.url.includes("/auth/sign-in")) {
+    window.location.href = "/signin";
+  }
+  return response;
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <PrimeReactProvider>
