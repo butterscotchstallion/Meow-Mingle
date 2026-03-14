@@ -13,7 +13,9 @@ A cat dating app to find your purrfect match
 
 ## Run the app
 
-`docker compose up -d`
+Postgres: `docker compose up -d`
+API: `cargo run`
+Front end: `cd ui/src; pnpm run dev`
 
 ## Run tests
 
