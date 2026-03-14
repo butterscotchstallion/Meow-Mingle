@@ -11,6 +11,10 @@ pub struct CatPhoto {
     #[serde(with = "rfc3339::option", rename = "createdAt")]
     pub created_at: Option<OffsetDateTime>,
     pub filename: String,
+    pub width: Option<i32>,
+    pub height: Option<i32>,
+    #[serde(rename = "altText")]
+    pub alt_text: Option<String>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -20,6 +24,9 @@ pub struct CatPhotoRow {
     pub order: Option<i32>,
     pub created_at: Option<OffsetDateTime>,
     pub filename: String,
+    pub width: Option<i32>,
+    pub height: Option<i32>,
+    pub alt_text: Option<String>,
 }
 
 pub async fn get_cat_photos_map(pool: &PgPool) -> Result<HashMap<Uuid, Vec<CatPhoto>>, Error> {
@@ -30,7 +37,10 @@ pub async fn get_cat_photos_map(pool: &PgPool) -> Result<HashMap<Uuid, Vec<CatPh
                p.id AS photo_id,
                p."order",
                p.created_at,
-               p.filename
+               p.filename,
+               p.width,
+               p.height,
+               p.alt_text
         FROM cats_photos cp
         JOIN photos p ON cp.photo_id = p.id
         ORDER BY cp.cat_id, p."order" ASC NULLS LAST
@@ -47,6 +57,9 @@ pub async fn get_cat_photos_map(pool: &PgPool) -> Result<HashMap<Uuid, Vec<CatPh
             order: row.order,
             created_at: row.created_at,
             filename: row.filename,
+            width: row.width,
+            height: row.height,
+            alt_text: row.alt_text,
         });
     }
 

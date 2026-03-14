@@ -14,6 +14,7 @@ export const zBreed = z.object({
 
 export const zCatPhoto = z.object({
     createdAt: z.iso.datetime().nullish(),
+    filename: z.string(),
     id: z.uuid(),
     order: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish()
 });
@@ -34,6 +35,7 @@ export const zCat = z.object({
     createdAt: z.iso.datetime().nullish(),
     id: z.uuid(),
     interests: z.array(zInterest),
+    lastSeen: z.iso.datetime().nullish(),
     name: z.string(),
     photos: z.array(zCatPhoto),
     updatedAt: z.iso.datetime().nullish()

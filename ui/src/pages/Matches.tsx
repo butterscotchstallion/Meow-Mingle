@@ -11,6 +11,10 @@ interface CatPhoto {
   id: string;
   order?: number | null;
   createdAt?: string | null;
+  filename: string;
+  width?: number | null;
+  height?: number | null;
+  altText?: string | null;
 }
 
 interface CatWithPhotos extends Cat {
@@ -105,7 +109,7 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
   }
 
   const photoUrl = hasPhotos
-    ? `http://localhost:3000/photos/${photos[photoIndex].id}`
+    ? `http://localhost:3000/photos/${photos[photoIndex].filename}`
     : null;
 
   return (
@@ -129,7 +133,9 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
           {photoUrl ? (
             <img
               src={photoUrl}
-              alt={cat.name}
+              alt={photos[photoIndex].altText ?? cat.name}
+              width={photos[photoIndex].width ?? undefined}
+              height={photos[photoIndex].height ?? undefined}
               draggable={false}
               className="w-full h-full object-cover pointer-events-none"
             />

@@ -50,6 +50,7 @@ export type Cat = {
     createdAt?: string | null;
     id: string;
     interests: Array<Interest>;
+    lastSeen?: string | null;
     name: string;
     photos: Array<CatPhoto>;
     updatedAt?: string | null;
@@ -63,6 +64,7 @@ export type CatDetailResponse = {
 
 export type CatPhoto = {
     createdAt?: string | null;
+    filename: string;
     id: string;
     order?: number | null;
 };
