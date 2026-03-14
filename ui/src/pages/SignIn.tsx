@@ -6,48 +6,55 @@ import { Password } from "primereact/password";
 import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { FloatLabel } from "primereact/floatlabel";
-import { signUpHandler } from "../api/sdk.gen";
+import { signInHandler } from "../api/sdk.gen";
+import type { Cat } from "../api/types.gen";
 import { useAuthStore } from "../store/authStore";
 
-const MAINE_COON_BREED_ID = "910ee31d-1fb6-428c-8b84-418cb8e55f20";
+interface SignInResults {
+  cat: Cat;
+  session_id: string;
+}
 
-export function SignUp() {
+interface SignInResponseWithResults {
+  status: string;
+  message: string;
+  results?: SignInResults;
+}
+
+export function SignIn() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
     setLoading(true);
+
     try {
-      const { data, error: apiError } = await signUpHandler({
-        body: {
-          cat: {
-            name,
-            password,
-            breed_id: MAINE_COON_BREED_ID,
-          },
-        },
+      const { data, error: apiError } = await signInHandler({
+        body: { name, password },
       });
 
-      if (apiError || !data?.results) {
-        setError(data?.message ?? "Sign up failed. Please try again.");
+      if (apiError || !data) {
+        setError("Sign in failed. Please try again.");
         return;
       }
 
-      setAuth(data.results.cat, data.results.session_id);
+      // The generated type only models the OpenAPI-declared shape, but the
+      // actual server response includes `results: { cat, session_id }`.
+      const rich = data as unknown as SignInResponseWithResults;
+
+      if (rich.status !== "OK" || !rich.results) {
+        setError(rich.message ?? "Sign in failed. Please try again.");
+        return;
+      }
+
+      setAuth(rich.results.cat, rich.results.session_id);
       navigate("/");
     } catch {
       setError("An unexpected error occurred. Please try again.");
@@ -61,7 +68,7 @@ export function SignUp() {
       <Card className="w-full max-w-md shadow-lg">
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-slate-100">🐱 Meow Mingle</h1>
-          <p className="mt-1 text-slate-400">Create your account</p>
+          <p className="mt-1 text-slate-400">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -86,25 +93,10 @@ export function SignUp() {
               inputClassName="w-full"
               toggleMask
               required
-              autoComplete="new-password"
+              autoComplete="current-password"
               feedback={false}
             />
             <label htmlFor="password">Password</label>
-          </FloatLabel>
-
-          <FloatLabel>
-            <Password
-              inputId="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full"
-              inputClassName="w-full"
-              toggleMask
-              required
-              autoComplete="new-password"
-              feedback={false}
-            />
-            <label htmlFor="confirmPassword">Confirm Password</label>
           </FloatLabel>
 
           {error && (
@@ -113,16 +105,16 @@ export function SignUp() {
 
           <Button
             type="submit"
-            label="Create Account"
-            icon="pi pi-user-plus"
+            label="Sign In"
+            icon="pi pi-sign-in"
             loading={loading}
             className="w-full"
           />
 
           <p className="text-center text-sm text-slate-400">
-            Already have an account?{" "}
-            <a href="/signin" className="text-purple-400 hover:underline">
-              Sign in
+            Don't have an account?{" "}
+            <a href="/signup" className="text-purple-400 hover:underline">
+              Sign up
             </a>
           </p>
         </form>
