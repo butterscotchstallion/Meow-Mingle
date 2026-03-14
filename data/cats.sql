@@ -19,4 +19,3 @@ create table public.cats
 
 alter table public.cats
     owner to meowmingler;
-

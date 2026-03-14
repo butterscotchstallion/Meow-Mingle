@@ -15,6 +15,14 @@ interface CatPhoto {
 
 interface CatWithPhotos extends Cat {
   photos: CatPhoto[];
+  lastSeen?: string | null;
+}
+
+const ONLINE_THRESHOLD_MS = 15 * 60 * 1000;
+
+function isOnline(lastSeen?: string | null): boolean {
+  if (!lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() <= ONLINE_THRESHOLD_MS;
 }
 
 // ─── Swipe card ──────────────────────────────────────────────────────────────
@@ -198,10 +206,10 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
             {cat.age != null && (
               <span className="text-xl text-slate-300">{cat.age}</span>
             )}
-            {cat.active && (
+            {isOnline((cat as CatWithPhotos).lastSeen) && (
               <span className="ml-auto flex items-center gap-1.5 text-xs text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-                Active
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                Online now
               </span>
             )}
           </div>

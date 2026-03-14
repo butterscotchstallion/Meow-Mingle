@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO cats (name, password, birth_date, breed_id)\n            VALUES ($1, $2, $3, $4)\n            RETURNING\n                id,\n                name,\n                password,\n                created_at,\n                updated_at,\n                active,\n                avatar_filename,\n                biography,\n                birth_date,\n                breed_id,\n                NULL::text AS breed_name,\n                DATE_PART('year', AGE(birth_date))::int AS age\n        ",
+  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.last_seen,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.birth_date,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name,\n               DATE_PART('year', AGE(c.birth_date))::int AS age\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        WHERE c.name = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -30,46 +30,48 @@
       },
       {
         "ordinal": 5,
+        "name": "last_seen",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
         "name": "active",
         "type_info": "Bool"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "avatar_filename",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "biography",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "birth_date",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "breed_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "breed_name",
-        "type_info": "Text"
+        "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "age",
         "type_info": "Int4"
       }
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Varchar",
-        "Timestamptz",
-        "Uuid"
+        "Text"
       ]
     },
     "nullable": [
@@ -81,11 +83,12 @@
       true,
       true,
       true,
+      true,
       false,
-      false,
-      null,
+      true,
+      true,
       null
     ]
   },
-  "hash": "17bf56a111598d14d014c5c65d638c5716be9656b67d40aad6b8276d05a3aa1d"
+  "hash": "776812da30fed1dfdc1f560535b2a69ff3d4849ca32c1d081490b497b45ffa51"
 }

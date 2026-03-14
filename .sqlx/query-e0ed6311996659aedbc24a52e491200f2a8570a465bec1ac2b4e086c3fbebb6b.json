@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.birth_date,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name,\n               DATE_PART('year', AGE(c.birth_date))::int AS age\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        JOIN sessions s ON c.id = s.cat_id\n        WHERE s.session_id = $1\n        ",
+  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.last_seen,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.birth_date,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name,\n               DATE_PART('year', AGE(c.birth_date))::int AS age\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        JOIN sessions s ON c.id = s.cat_id\n        WHERE s.session_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -30,36 +30,41 @@
       },
       {
         "ordinal": 5,
+        "name": "last_seen",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
         "name": "active",
         "type_info": "Bool"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "avatar_filename",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "biography",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "birth_date",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "breed_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "breed_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "age",
         "type_info": "Int4"
       }
@@ -78,11 +83,12 @@
       true,
       true,
       true,
+      true,
       false,
       true,
       true,
       null
     ]
   },
-  "hash": "02d9eff978d63efd772317ed9d21b6dd4c3640158280820c0426ae3c8a8c21f7"
+  "hash": "e0ed6311996659aedbc24a52e491200f2a8570a465bec1ac2b4e086c3fbebb6b"
 }

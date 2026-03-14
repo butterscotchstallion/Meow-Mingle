@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.birth_date,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name,\n               DATE_PART('year', AGE(c.birth_date))::int AS age\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        WHERE c.id = $1\n        ",
+  "query": "\n            SELECT c.id,\n                   c.name,\n                   c.password,\n                   c.created_at,\n                   c.updated_at,\n                   c.last_seen,\n                   c.active,\n                   c.avatar_filename,\n                   c.biography,\n                   c.birth_date,\n                   c.breed_id,\n                   b.name AS breed_name,\n                   DATE_PART('year', AGE(c.birth_date))::int AS age\n            FROM cats c\n            JOIN sessions s ON c.id = s.cat_id\n            JOIN cat_breeds b ON c.breed_id = b.id\n            WHERE s.active = true\n            AND (\n                s.created_at >= DATE_TRUNC('month', current_date - interval '1' month)\n                OR\n                s.updated_at >= DATE_TRUNC('month', current_date - interval '1' month)\n            )\n            AND s.session_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -30,36 +30,41 @@
       },
       {
         "ordinal": 5,
+        "name": "last_seen",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
         "name": "active",
         "type_info": "Bool"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "avatar_filename",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "biography",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "birth_date",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "breed_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "breed_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "age",
         "type_info": "Int4"
       }
@@ -78,11 +83,12 @@
       true,
       true,
       true,
-      false,
       true,
+      false,
+      false,
       true,
       null
     ]
   },
-  "hash": "f38339bb1d0169079606c27faa99d45baaa300ee614133af09a9d09b96c767b6"
+  "hash": "8e95676f20f960cf09a048100992c709bbb514f7be03fc742d06737e5daa6c91"
 }

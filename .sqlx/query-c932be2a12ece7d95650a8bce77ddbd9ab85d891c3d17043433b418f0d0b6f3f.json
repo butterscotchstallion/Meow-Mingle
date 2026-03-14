@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.birth_date,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name,\n               DATE_PART('year', AGE(c.birth_date))::int AS age\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        WHERE c.name = $1\n        ",
+  "query": "\n        SELECT c.id,\n               c.name,\n               c.password,\n               c.created_at,\n               c.updated_at,\n               c.last_seen,\n               c.active,\n               c.avatar_filename,\n               c.biography,\n               c.birth_date,\n               cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name,\n               DATE_PART('year', AGE(c.birth_date))::int AS age\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        ",
   "describe": {
     "columns": [
       {
@@ -30,49 +30,53 @@
       },
       {
         "ordinal": 5,
+        "name": "last_seen",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
         "name": "active",
         "type_info": "Bool"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "avatar_filename",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "biography",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "birth_date",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "breed_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "breed_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "age",
         "type_info": "Int4"
       }
     ],
     "parameters": {
-      "Left": [
-        "Text"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
       false,
       false,
+      true,
       true,
       true,
       true,
@@ -84,5 +88,5 @@
       null
     ]
   },
-  "hash": "93c00974c53bd9dfdb33d59a0505089df020f94bb7c33ac63ce2239582abd773"
+  "hash": "c932be2a12ece7d95650a8bce77ddbd9ab85d891c3d17043433b418f0d0b6f3f"
 }

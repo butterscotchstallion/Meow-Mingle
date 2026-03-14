@@ -129,6 +129,7 @@ pub async fn match_suggestions_handler(
                c.password,
                c.created_at,
                c.updated_at,
+               c.last_seen,
                c.active,
                c.avatar_filename,
                c.biography,
