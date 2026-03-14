@@ -32,7 +32,18 @@ pub async fn session_get_by_id_handler(
     let row = sqlx::query_as!(
         CatRow,
         r#"
-            SELECT c.*, b.name AS breed_name
+            SELECT c.id,
+                   c.name,
+                   c.password,
+                   c.created_at,
+                   c.updated_at,
+                   c.active,
+                   c.avatar_filename,
+                   c.biography,
+                   c.birth_date,
+                   c.breed_id,
+                   b.name AS breed_name,
+                   DATE_PART('year', AGE(c.birth_date))::int AS age
             FROM cats c
             JOIN sessions s ON c.id = s.cat_id
             JOIN cat_breeds b ON c.breed_id = b.id

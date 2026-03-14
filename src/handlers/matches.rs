@@ -4,11 +4,11 @@ use crate::models::interests::populate_interests;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 
 use axum_cookie::CookieManager;
-use sqlx::{Error, PgPool};
+use sqlx::{Error, PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -43,6 +43,13 @@ pub struct MatchesListResponse {
 pub struct MatchSuggestionsResponse {
     pub status: Status,
     pub results: Vec<Cat>,
+}
+
+#[derive(serde::Deserialize, Default)]
+#[serde(default)]
+pub struct MatchSuggestionAgeFilter {
+    pub lt: i32,
+    pub gt: i32,
 }
 
 #[axum::debug_handler]
@@ -101,6 +108,7 @@ pub async fn matches_list_handler(
 pub async fn match_suggestions_handler(
     State(pool): State<PgPool>,
     cookie_manager: CookieManager,
+    age_filter: Query<MatchSuggestionAgeFilter>,
 ) -> Result<(StatusCode, Json<MatchSuggestionsResponse>), ApiError> {
     let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
@@ -109,8 +117,7 @@ pub async fn match_suggestions_handler(
 
     tracing::info!("Getting suggestions for cat: {:?}", cat);
 
-    let rows = sqlx::query_as!(
-        CatRow,
+    let mut query: QueryBuilder<Postgres> = QueryBuilder::new(
         r#"
         SELECT c.id,
                c.name,
@@ -122,19 +129,36 @@ pub async fn match_suggestions_handler(
                c.biography,
                c.birth_date,
                cat_breeds.id AS breed_id,
-               cat_breeds.name AS breed_name
+               cat_breeds.name AS breed_name,
+               DATE_PART('year', AGE(c.birth_date))::int AS age
         FROM cats c
         JOIN cat_breeds ON c.breed_id = cat_breeds.id
         LEFT JOIN matches m
             ON (m.initiator_id = c.id OR m.target_id = c.id)
         WHERE m.id IS NULL
-        AND c.id = $1
-        "#,
-        cat.id
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e: Error| ApiError::internal(e))?;
+        AND c.id != "#,
+    );
+    query.push_bind(cat.id);
+
+    // age_filter.lt = "younger than N years" => birth_date > NOW() - INTERVAL 'N years'
+    if age_filter.lt > 0 {
+        query.push(" AND c.birth_date > NOW() - ");
+        query.push_bind(format!("{} years", age_filter.lt));
+        query.push("::interval");
+    }
+
+    // age_filter.gt = "older than N years" => birth_date < NOW() - INTERVAL 'N years'
+    if age_filter.gt > 0 {
+        query.push(" AND c.birth_date < NOW() - ");
+        query.push_bind(format!("{} years", age_filter.gt));
+        query.push("::interval");
+    }
+
+    let rows = query
+        .build_query_as::<CatRow>()
+        .fetch_all(&pool)
+        .await
+        .map_err(|e: Error| ApiError::internal(e))?;
 
     let mut suggestions: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
     populate_interests(&pool, &mut suggestions)

@@ -79,7 +79,8 @@ pub async fn get_cat_from_session_id(
                c.biography,
                c.birth_date,
                cat_breeds.id AS breed_id,
-               cat_breeds.name AS breed_name
+               cat_breeds.name AS breed_name,
+               DATE_PART('year', AGE(c.birth_date))::int AS age
         FROM cats c
         JOIN cat_breeds ON c.breed_id = cat_breeds.id
         JOIN sessions s ON c.id = s.cat_id

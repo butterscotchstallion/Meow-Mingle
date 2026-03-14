@@ -24,9 +24,11 @@ pub struct Cat {
     #[serde(with = "rfc3339::option", rename = "birthDate")]
     pub birth_date: Option<OffsetDateTime>,
     pub biography: Option<String>,
+    pub age: Option<i32>,
     pub interests: Vec<Interest>,
 }
 
+#[derive(sqlx::FromRow)]
 pub struct CatRow {
     pub id: Uuid,
     pub name: String,
@@ -39,6 +41,7 @@ pub struct CatRow {
     pub breed_name: Option<String>,
     pub birth_date: Option<OffsetDateTime>,
     pub biography: Option<String>,
+    pub age: Option<i32>,
 }
 
 impl From<CatRow> for Cat {
@@ -55,6 +58,7 @@ impl From<CatRow> for Cat {
             breed_name: row.breed_name,
             birth_date: row.birth_date,
             biography: row.biography,
+            age: row.age,
             interests: vec![],
         }
     }
@@ -84,7 +88,8 @@ pub async fn get_cat_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Option<Cat>,
                c.biography,
                c.birth_date,
                cat_breeds.id AS breed_id,
-               cat_breeds.name AS breed_name
+               cat_breeds.name AS breed_name,
+               DATE_PART('year', AGE(c.birth_date))::int AS age
         FROM cats c
         JOIN cat_breeds ON c.breed_id = cat_breeds.id
         WHERE c.id = $1
@@ -111,7 +116,8 @@ pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option
                c.biography,
                c.birth_date,
                cat_breeds.id AS breed_id,
-               cat_breeds.name AS breed_name
+               cat_breeds.name AS breed_name,
+               DATE_PART('year', AGE(c.birth_date))::int AS age
         FROM cats c
         JOIN cat_breeds ON c.breed_id = cat_breeds.id
         WHERE c.name = $1
@@ -138,7 +144,8 @@ pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {
                c.biography,
                c.birth_date,
                cat_breeds.id AS breed_id,
-               cat_breeds.name AS breed_name
+               cat_breeds.name AS breed_name,
+               DATE_PART('year', AGE(c.birth_date))::int AS age
         FROM cats c
         JOIN cat_breeds ON c.breed_id = cat_breeds.id
         "#
@@ -169,7 +176,8 @@ pub async fn add_cat(pool: &sqlx::PgPool, cat: NewCat) -> Result<Cat, Error> {
                 biography,
                 birth_date,
                 breed_id,
-                NULL::text AS breed_name
+                NULL::text AS breed_name,
+                DATE_PART('year', AGE(birth_date))::int AS age
         ",
         cat.name,
         cat.password,
