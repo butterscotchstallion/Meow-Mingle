@@ -1,4 +1,5 @@
 use crate::models::interests::{Interest, populate_interests, with_interests};
+use crate::models::photos::CatPhoto;
 use sqlx::Error;
 use sqlx::types::Uuid;
 use sqlx::types::time::OffsetDateTime;
@@ -26,6 +27,7 @@ pub struct Cat {
     pub biography: Option<String>,
     pub age: Option<i32>,
     pub interests: Vec<Interest>,
+    pub photos: Vec<CatPhoto>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -60,6 +62,7 @@ impl From<CatRow> for Cat {
             biography: row.biography,
             age: row.age,
             interests: vec![],
+            photos: vec![],
         }
     }
 }

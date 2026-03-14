@@ -1,6 +1,7 @@
 use crate::handlers::common::ApiError;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
+use crate::models::photos::populate_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
@@ -173,6 +174,9 @@ pub async fn match_suggestions_handler(
 
     let mut suggestions: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
     populate_interests(&pool, &mut suggestions)
+        .await
+        .map_err(|e| ApiError::internal(e))?;
+    populate_photos(&pool, &mut suggestions)
         .await
         .map_err(|e| ApiError::internal(e))?;
 
