@@ -7,6 +7,7 @@ import { App } from "./App";
 import "./index.css";
 
 client.setConfig({
+  baseUrl: "http://localhost:3000",
   credentials: "include",
 });
 
