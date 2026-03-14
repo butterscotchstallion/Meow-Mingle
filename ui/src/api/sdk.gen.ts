@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, CatsListHandlerData, CatsListHandlerErrors, CatsListHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetByIdHandlerData, SessionGetByIdHandlerErrors, SessionGetByIdHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
+import type { BreedsListHandlerData, BreedsListHandlerErrors, BreedsListHandlerResponses, CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetByIdHandlerData, SessionGetByIdHandlerErrors, SessionGetByIdHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -36,7 +36,7 @@ export const signUpHandler = <ThrowOnError extends boolean = false>(options: Opt
     }
 });
 
-export const catsListHandler = <ThrowOnError extends boolean = false>(options?: Options<CatsListHandlerData, ThrowOnError>) => (options?.client ?? client).get<CatsListHandlerResponses, CatsListHandlerErrors, ThrowOnError>({ url: '/api/v1/cats', ...options });
+export const breedsListHandler = <ThrowOnError extends boolean = false>(options?: Options<BreedsListHandlerData, ThrowOnError>) => (options?.client ?? client).get<BreedsListHandlerResponses, BreedsListHandlerErrors, ThrowOnError>({ url: '/api/v1/breeds', ...options });
 
 export const catDetailHandler = <ThrowOnError extends boolean = false>(options: Options<CatDetailHandlerData, ThrowOnError>) => (options.client ?? client).get<CatDetailHandlerResponses, CatDetailHandlerErrors, ThrowOnError>({ url: '/api/v1/cats/{id}', ...options });
 

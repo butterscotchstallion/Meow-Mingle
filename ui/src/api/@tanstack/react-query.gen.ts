@@ -3,11 +3,11 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { catDetailHandler, catsListHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetByIdHandler, signInHandler, signUpHandler } from '../sdk.gen';
-import type { CatDetailHandlerData, CatDetailHandlerResponse, CatsListHandlerData, CatsListHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetByIdHandlerData, SessionGetByIdHandlerResponse, SignInHandlerData, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
+import { breedsListHandler, catDetailHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetByIdHandler, signInHandler, signUpHandler } from '../sdk.gen';
+import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetByIdHandlerData, SessionGetByIdHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
 
-export const signInHandlerMutation = (options?: Partial<Options<SignInHandlerData>>): UseMutationOptions<SignInHandlerResponse, DefaultError, Options<SignInHandlerData>> => {
-    const mutationOptions: UseMutationOptions<SignInHandlerResponse, DefaultError, Options<SignInHandlerData>> = {
+export const signInHandlerMutation = (options?: Partial<Options<SignInHandlerData>>): UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> => {
+    const mutationOptions: UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await signInHandler({
                 ...options,
@@ -67,11 +67,11 @@ const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions
     return [params];
 };
 
-export const catsListHandlerQueryKey = (options?: Options<CatsListHandlerData>) => createQueryKey('catsListHandler', options);
+export const breedsListHandlerQueryKey = (options?: Options<BreedsListHandlerData>) => createQueryKey('breedsListHandler', options);
 
-export const catsListHandlerOptions = (options?: Options<CatsListHandlerData>) => queryOptions<CatsListHandlerResponse, DefaultError, CatsListHandlerResponse, ReturnType<typeof catsListHandlerQueryKey>>({
+export const breedsListHandlerOptions = (options?: Options<BreedsListHandlerData>) => queryOptions<BreedsListHandlerResponse, DefaultError, BreedsListHandlerResponse, ReturnType<typeof breedsListHandlerQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await catsListHandler({
+        const { data } = await breedsListHandler({
             ...options,
             ...queryKey[0],
             signal,
@@ -79,7 +79,7 @@ export const catsListHandlerOptions = (options?: Options<CatsListHandlerData>) =
         });
         return data;
     },
-    queryKey: catsListHandlerQueryKey(options)
+    queryKey: breedsListHandlerQueryKey(options)
 });
 
 export const catDetailHandlerQueryKey = (options: Options<CatDetailHandlerData>) => createQueryKey('catDetailHandler', options);

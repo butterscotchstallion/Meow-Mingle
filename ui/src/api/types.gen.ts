@@ -29,17 +29,29 @@ export type AuthSignUpResponseResults = {
     session_id: string;
 };
 
+export type Breed = {
+    id: string;
+    name: string;
+};
+
+export type BreedsListResponse = {
+    results: Array<Breed>;
+    status: Status;
+};
+
 export type Cat = {
     active?: boolean | null;
     age?: number | null;
     avatarFilename?: string | null;
     biography?: string | null;
+    birthDate?: string | null;
     breedId?: string | null;
     breedName?: string | null;
     createdAt?: string | null;
     id: string;
     interests: Array<Interest>;
     name: string;
+    photos: Array<CatPhoto>;
     updatedAt?: string | null;
 };
 
@@ -49,9 +61,10 @@ export type CatDetailResponse = {
     status: Status;
 };
 
-export type CatsListResponse = {
-    results: Array<Cat>;
-    status: string;
+export type CatPhoto = {
+    createdAt?: string | null;
+    id: string;
+    order?: number | null;
 };
 
 export type Interest = {
@@ -74,16 +87,16 @@ export enum MatchStatus {
 
 export type MatchSuggestionsResponse = {
     results: Array<Cat>;
-    status: string;
+    status: Status;
 };
 
 export type MatchesListResponse = {
     results: Array<Match>;
-    status: string;
+    status: Status;
 };
 
 export type NewCat = {
-    age?: number | null;
+    birth_date?: string | null;
     breed_id: string;
     name: string;
     password: string;
@@ -105,8 +118,10 @@ export type SignInHandlerErrors = {
     /**
      * Internal server error
      */
-    500: unknown;
+    500: AuthSignInResponse;
 };
+
+export type SignInHandlerError = SignInHandlerErrors[keyof SignInHandlerErrors];
 
 export type SignInHandlerResponses = {
     /**
@@ -140,28 +155,28 @@ export type SignUpHandlerResponses = {
 
 export type SignUpHandlerResponse = SignUpHandlerResponses[keyof SignUpHandlerResponses];
 
-export type CatsListHandlerData = {
+export type BreedsListHandlerData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/v1/cats';
+    url: '/api/v1/breeds';
 };
 
-export type CatsListHandlerErrors = {
+export type BreedsListHandlerErrors = {
     /**
      * Internal server error
      */
     500: unknown;
 };
 
-export type CatsListHandlerResponses = {
+export type BreedsListHandlerResponses = {
     /**
-     * List of cats
+     * List of all cat breeds
      */
-    200: CatsListResponse;
+    200: BreedsListResponse;
 };
 
-export type CatsListHandlerResponse = CatsListHandlerResponses[keyof CatsListHandlerResponses];
+export type BreedsListHandlerResponse = BreedsListHandlerResponses[keyof BreedsListHandlerResponses];
 
 export type CatDetailHandlerData = {
     body?: never;
@@ -176,6 +191,10 @@ export type CatDetailHandlerData = {
 };
 
 export type CatDetailHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
     /**
      * Internal server error
      */
@@ -200,6 +219,10 @@ export type MatchesListHandlerData = {
 
 export type MatchesListHandlerErrors = {
     /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
      * Internal server error
      */
     500: unknown;
@@ -222,6 +245,10 @@ export type MatchSuggestionsHandlerData = {
 };
 
 export type MatchSuggestionsHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
     /**
      * Internal server error
      */

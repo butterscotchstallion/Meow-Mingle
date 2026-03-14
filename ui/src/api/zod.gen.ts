@@ -7,6 +7,17 @@ export const zAuthSignInPayload = z.object({
     password: z.string()
 });
 
+export const zBreed = z.object({
+    id: z.uuid(),
+    name: z.string()
+});
+
+export const zCatPhoto = z.object({
+    createdAt: z.iso.datetime().nullish(),
+    id: z.uuid(),
+    order: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish()
+});
+
 export const zInterest = z.object({
     id: z.uuid(),
     name: z.string()
@@ -17,23 +28,20 @@ export const zCat = z.object({
     age: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish(),
     avatarFilename: z.string().nullish(),
     biography: z.string().nullish(),
+    birthDate: z.iso.datetime().nullish(),
     breedId: z.uuid().nullish(),
     breedName: z.string().nullish(),
     createdAt: z.iso.datetime().nullish(),
     id: z.uuid(),
     interests: z.array(zInterest),
     name: z.string(),
+    photos: z.array(zCatPhoto),
     updatedAt: z.iso.datetime().nullish()
 });
 
 export const zAuthSignUpResponseResults = z.object({
     cat: zCat,
     session_id: z.string()
-});
-
-export const zCatsListResponse = z.object({
-    results: z.array(zCat),
-    status: z.string()
 });
 
 export const zMatchStatus = z.enum([
@@ -49,18 +57,8 @@ export const zMatch = z.object({
     target_id: z.uuid()
 });
 
-export const zMatchSuggestionsResponse = z.object({
-    results: z.array(zCat),
-    status: z.string()
-});
-
-export const zMatchesListResponse = z.object({
-    results: z.array(zMatch),
-    status: z.string()
-});
-
 export const zNewCat = z.object({
-    age: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish(),
+    birth_date: z.iso.datetime().nullish(),
     breed_id: z.uuid(),
     name: z.string(),
     password: z.string()
@@ -83,9 +81,24 @@ export const zAuthSignUpResponse = z.object({
     status: zStatus
 });
 
+export const zBreedsListResponse = z.object({
+    results: z.array(zBreed),
+    status: zStatus
+});
+
 export const zCatDetailResponse = z.object({
     message: z.string().nullish(),
     results: zCat.nullish(),
+    status: zStatus
+});
+
+export const zMatchSuggestionsResponse = z.object({
+    results: z.array(zCat),
+    status: zStatus
+});
+
+export const zMatchesListResponse = z.object({
+    results: z.array(zMatch),
     status: zStatus
 });
 
@@ -111,16 +124,16 @@ export const zSignUpHandlerData = z.object({
  */
 export const zSignUpHandlerResponse = zAuthSignUpResponse;
 
-export const zCatsListHandlerData = z.object({
+export const zBreedsListHandlerData = z.object({
     body: z.never().optional(),
     path: z.never().optional(),
     query: z.never().optional()
 });
 
 /**
- * List of cats
+ * List of all cat breeds
  */
-export const zCatsListHandlerResponse = zCatsListResponse;
+export const zBreedsListHandlerResponse = zBreedsListResponse;
 
 export const zCatDetailHandlerData = z.object({
     body: z.never().optional(),
