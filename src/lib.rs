@@ -22,6 +22,7 @@ use utoipa_swagger_ui::SwaggerUi;
         crate::handlers::matches::matches_list_handler,
         crate::handlers::matches::match_suggestions_handler,
         crate::handlers::session::session_get_by_id_handler,
+        crate::handlers::breeds::breeds_list_handler,
     ),
     components(
         schemas(
@@ -32,6 +33,8 @@ use utoipa_swagger_ui::SwaggerUi;
             crate::handlers::matches::MatchesListResponse,
             crate::handlers::auth::AuthSignUpPayload,
             crate::handlers::auth::AuthSignUpResponse,
+            crate::handlers::breeds::Breed,
+            crate::handlers::breeds::BreedsListResponse,
         )
     ),
     tags(
@@ -49,6 +52,8 @@ use axum_cookie::prelude::*;
 
 use crate::cats::routes::CAT_DETAIL;
 use crate::handlers::auth::routes::{AUTH_SIGN_IN, AUTH_SIGN_UP};
+use crate::handlers::breeds::breeds_list_handler;
+use crate::handlers::breeds::routes::BREEDS_LIST;
 pub use crate::handlers::cats;
 use crate::handlers::matches::routes::{MATCH_SUGGESTIONS, MATCHES_LIST};
 use crate::handlers::matches::{match_suggestions_handler, matches_list_handler};
@@ -65,6 +70,7 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(AUTH_SIGN_UP, axum::routing::post(sign_up_handler))
         .route(MATCHES_LIST, get(matches_list_handler))
         .route(MATCH_SUGGESTIONS, get(match_suggestions_handler))
+        .route(BREEDS_LIST, get(breeds_list_handler))
         .with_state(pool)
         .layer(CookieLayer::default());
 
