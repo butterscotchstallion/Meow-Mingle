@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 
-version: '3'
+version: "3"
 
 tasks:
   cov:
@@ -16,6 +16,7 @@ tasks:
   genapi:
     desc: Generate API
     cmds:
+      - cargo p
       - echo "Fetching OpenAPI spec from running server..."
       - curl -s http://127.0.0.1:3000/api-docs/openapi.json -o openapi.json
       - echo "Generating TypeScript client..."
