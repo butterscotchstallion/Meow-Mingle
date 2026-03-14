@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
 import { ProgressSpinner } from "primereact/progressspinner";
@@ -13,13 +14,13 @@ interface CatPhoto {
 }
 
 interface CatWithPhotos extends Cat {
-  photos?: CatPhoto[];
+  photos: CatPhoto[];
 }
 
 // ─── Swipe card ──────────────────────────────────────────────────────────────
 
 const SWIPE_THRESHOLD = 100; // px needed to commit a swipe
-const TILT_FACTOR = 0.12;    // deg per px of drag
+const TILT_FACTOR = 0.12; // deg per px of drag
 
 type SwipeDirection = "left" | "right" | null;
 
@@ -71,11 +72,15 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
   }
 
   const rotation = committed
-    ? committed === "right" ? 30 : -30
+    ? committed === "right"
+      ? 30
+      : -30
     : dragX * TILT_FACTOR;
 
   const translateX = committed
-    ? committed === "right" ? "120vw" : "-120vw"
+    ? committed === "right"
+      ? "120vw"
+      : "-120vw"
     : `${dragX}px`;
 
   const overlayOpacity = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
@@ -111,7 +116,6 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
     >
       {/* Card shell */}
       <div className="w-full h-full rounded-3xl overflow-hidden shadow-2xl flex flex-col bg-slate-800 border border-slate-700">
-
         {/* Photo area */}
         <div className="relative flex-1 bg-slate-900 overflow-hidden">
           {photoUrl ? (
@@ -136,9 +140,10 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
                   key={i}
                   className="flex-1 h-1 rounded-full"
                   style={{
-                    background: i === photoIndex
-                      ? "rgba(255,255,255,0.95)"
-                      : "rgba(255,255,255,0.35)",
+                    background:
+                      i === photoIndex
+                        ? "rgba(255,255,255,0.95)"
+                        : "rgba(255,255,255,0.35)",
                   }}
                 />
               ))}
@@ -164,15 +169,25 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
           {/* LIKE / NOPE overlays */}
           <div
             className="absolute top-8 left-6 border-4 border-emerald-400 rounded-lg px-3 py-1 rotate-[-20deg]"
-            style={{ opacity: showLike ? overlayOpacity : 0, transition: "opacity 0.1s" }}
+            style={{
+              opacity: showLike ? overlayOpacity : 0,
+              transition: "opacity 0.1s",
+            }}
           >
-            <span className="text-emerald-400 font-black text-3xl tracking-widest">LIKE</span>
+            <span className="text-emerald-400 font-black text-3xl tracking-widest">
+              LIKE
+            </span>
           </div>
           <div
             className="absolute top-8 right-6 border-4 border-rose-400 rounded-lg px-3 py-1 rotate-[20deg]"
-            style={{ opacity: showNope ? overlayOpacity : 0, transition: "opacity 0.1s" }}
+            style={{
+              opacity: showNope ? overlayOpacity : 0,
+              transition: "opacity 0.1s",
+            }}
           >
-            <span className="text-rose-400 font-black text-3xl tracking-widest">NOPE</span>
+            <span className="text-rose-400 font-black text-3xl tracking-widest">
+              NOPE
+            </span>
           </div>
         </div>
 
@@ -268,9 +283,16 @@ export function Matches() {
     <div className="flex flex-col min-h-screen bg-slate-900">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-        <h1 className="text-xl font-bold text-slate-100">🐱 Meow Mingle</h1>
+        <Link
+          to="/matches"
+          className="text-xl font-bold text-slate-100 hover:text-purple-400 transition-colors no-underline"
+        >
+          🐱 Meow Mingle
+        </Link>
         <span className="text-sm text-slate-500">
-          {hasCurrent ? `${remaining.length} suggestion${remaining.length !== 1 ? "s" : ""}` : ""}
+          {hasCurrent
+            ? `${remaining.length} suggestion${remaining.length !== 1 ? "s" : ""}`
+            : ""}
         </span>
       </header>
 
@@ -300,10 +322,7 @@ export function Matches() {
         {!loading && !error && hasCurrent && (
           <>
             {/* Card stack — render top 3 for depth effect */}
-            <div
-              className="relative w-full max-w-sm"
-              style={{ height: 560 }}
-            >
+            <div className="relative w-full max-w-sm" style={{ height: 560 }}>
               {remaining.slice(0, 3).map((cat, stackIndex) => {
                 const isTop = stackIndex === 0;
                 const scale = 1 - stackIndex * 0.04;
@@ -320,11 +339,7 @@ export function Matches() {
                       transformOrigin: "bottom center",
                     }}
                   >
-                    <SwipeCard
-                      cat={cat}
-                      onSwipe={handleSwipe}
-                      isTop={isTop}
-                    />
+                    <SwipeCard cat={cat} onSwipe={handleSwipe} isTop={isTop} />
                   </div>
                 );
               })}

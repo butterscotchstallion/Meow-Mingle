@@ -55,7 +55,7 @@ export function SignIn() {
       }
 
       setAuth(rich.results.cat, rich.results.session_id);
-      navigate("/");
+      navigate("/matches");
     } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
