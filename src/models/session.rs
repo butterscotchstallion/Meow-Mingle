@@ -33,8 +33,8 @@ pub async fn get_or_generate_session_id(
     let session_id = generate_session_id();
     sqlx::query(
         r#"
-        INSERT INTO sessions (cat_id, session_id, created_at, updated_at)
-		VALUES ($1, $2, NOW(), NOW())
+        INSERT INTO sessions (cat_id, session_id, created_at, updated_at, active)
+		VALUES ($1, $2, NOW(), NOW(), true)
 		ON CONFLICT(cat_id)
 	DO UPDATE SET session_id = $2, updated_at = NOW()
     "#,
@@ -86,6 +86,7 @@ pub async fn get_cat_from_session_id(
         JOIN cat_breeds ON c.breed_id = cat_breeds.id
         JOIN sessions s ON c.id = s.cat_id
         WHERE s.session_id = $1
+        AND s.active = true
         "#,
         session_id
     )

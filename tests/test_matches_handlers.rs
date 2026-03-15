@@ -26,6 +26,7 @@ async fn test_matches_list_returns_200() {
 
     let body = response.json::<MatchesListResponse>();
 
+    response.assert_status(StatusCode::OK);
     assert_eq!(body.status, Status::Ok);
 }
 

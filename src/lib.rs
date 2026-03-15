@@ -23,7 +23,7 @@ use utoipa_swagger_ui::SwaggerUi;
         crate::handlers::auth::sign_up_handler,
         crate::handlers::matches::matches_list_handler,
         crate::handlers::matches::match_suggestions_handler,
-        crate::handlers::session::session_get_by_id_handler,
+        crate::handlers::session::session_get_from_cookie_handler,
         crate::handlers::breeds::breeds_list_handler,
     ),
     components(
@@ -79,7 +79,10 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
 
     let api_router = Router::new()
         .route(CAT_DETAIL, get(cat_detail_handler))
-        .route(SESSION_GET_BY_ID, get(session_get_by_id_handler))
+        .route(
+            SESSION_GET_FROM_COOKIE,
+            get(session_get_from_cookie_handler),
+        )
         .route(AUTH_SIGN_IN, axum::routing::post(sign_in_handler))
         .route(AUTH_SIGN_UP, axum::routing::post(sign_up_handler))
         .route(MATCHES_LIST, get(matches_list_handler))
