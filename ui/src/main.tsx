@@ -5,6 +5,7 @@ import { PrimeReactProvider } from "primereact/api";
 import { client } from "./api/client.gen";
 import { App } from "./App";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { useAuthStore } from "./store/authStore";
 import "./index.css";
 
 client.setConfig({
@@ -14,6 +15,7 @@ client.setConfig({
 
 client.interceptors.response.use((response, request) => {
   if (response.status === 401 && !request.url.includes("/auth/sign-in")) {
+    useAuthStore.getState().clearAuth();
     window.location.href = "/signin";
   }
   return response;

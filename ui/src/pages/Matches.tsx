@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { UserMenu } from "../components/UserMenu";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
 import { ProgressSpinner } from "primereact/progressspinner";
@@ -304,6 +305,7 @@ export function Matches() {
         >
           🐱 Meow Mingle
         </Link>
+        <UserMenu />
       </header>
 
       {/* Main */}
