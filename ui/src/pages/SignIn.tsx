@@ -80,6 +80,7 @@ export function SignIn() {
               className="w-full"
               required
               autoComplete="username"
+              maxLength={36}
             />
             <label htmlFor="name">Name</label>
           </FloatLabel>
@@ -95,6 +96,7 @@ export function SignIn() {
               required
               autoComplete="current-password"
               feedback={false}
+              maxLength={150}
             />
             <label htmlFor="password">Password</label>
           </FloatLabel>

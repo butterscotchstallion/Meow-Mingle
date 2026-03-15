@@ -73,6 +73,7 @@ export function SignUp() {
               className="w-full"
               required
               autoComplete="username"
+              maxLength={36}
             />
             <label htmlFor="name">Name</label>
           </FloatLabel>
@@ -88,6 +89,7 @@ export function SignUp() {
               required
               autoComplete="new-password"
               feedback={false}
+              maxLength={150}
             />
             <label htmlFor="password">Password</label>
           </FloatLabel>
@@ -103,6 +105,7 @@ export function SignUp() {
               required
               autoComplete="new-password"
               feedback={false}
+              maxLength={150}
             />
             <label htmlFor="confirmPassword">Confirm Password</label>
           </FloatLabel>
