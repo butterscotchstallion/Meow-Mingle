@@ -1,34 +1,38 @@
 use crate::cats::CatDetailResponse;
+use crate::handlers::common::ApiError;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
+use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use sqlx::PgPool;
+use axum_cookie::CookieManager;
+use sqlx::{Error, PgPool};
 use uuid::Uuid;
 
 pub mod routes {
-    pub const SESSION_GET_BY_ID: &str = "/api/v1/session/{id}";
+    pub const SESSION_GET_FROM_COOKIE: &str = "/api/v1/session";
 }
 
 #[axum::debug_handler]
 #[utoipa::path(
     get,
-    path = routes::SESSION_GET_BY_ID,
-    params(
-        ("id" = String, Path, description = "Session id")
-    ),
+    path = routes::SESSION_GET_FROM_COOKIE,
     responses(
-        (status = 200, description = "Details for a specific cat", body = CatDetailResponse),
+        (status = 200, description = "Session for current user", body = CatDetailResponse),
+        (status = 404, description = "Session not found"),
         (status = 500, description = "Internal server error")
     )
 )]
-pub async fn session_get_by_id_handler(
+pub async fn session_get_from_cookie_handler(
     State(pool): State<PgPool>,
-    Path(session_id): Path<Uuid>,
-) -> Result<impl IntoResponse, (StatusCode, Json<CatDetailResponse>)> {
+    cookie_manager: CookieManager,
+) -> Result<(StatusCode, Json<CatDetailResponse>), ApiError> {
+    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+        Ok(Some(cat)) => cat,
+        _ => return Err(ApiError::not_found()),
+    };
     let row = sqlx::query_as!(
         CatRow,
         r#"
@@ -56,34 +60,18 @@ pub async fn session_get_by_id_handler(
             )
             AND s.session_id = $1
         "#,
-        session_id as Uuid
+        cat.id as Uuid
     )
     .fetch_optional(&pool)
     .await
-    .map_err(|e: sqlx::Error| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(CatDetailResponse {
-                status: Status::Error,
-                message: Some(e.to_string()),
-                results: None,
-            }),
-        )
-    })?;
+    .map_err(|e: Error| ApiError::internal(e))?;
 
     let mut cat = row.map(Cat::from);
     if let Some(c) = cat.as_mut() {
         let mut v = vec![std::mem::take(c)];
-        populate_interests(&pool, &mut v).await.map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(CatDetailResponse {
-                    status: Status::Error,
-                    message: Some(e.to_string()),
-                    results: None,
-                }),
-            )
-        })?;
+        populate_interests(&pool, &mut v)
+            .await
+            .map_err(|e| ApiError::internal(e))?;
         *c = v.remove(0);
     }
 
@@ -96,13 +84,6 @@ pub async fn session_get_by_id_handler(
                 results: Some(cat),
             }),
         )),
-        None => Err((
-            StatusCode::NOT_FOUND,
-            Json(CatDetailResponse {
-                status: Status::Error,
-                message: Some("Session not found".to_string()),
-                results: None,
-            }),
-        )),
+        None => Err(ApiError::not_found()),
     }
 }
