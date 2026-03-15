@@ -193,7 +193,7 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
             </span>
           </div>
           <div
-            className="absolute top-8 right-6 border-4 border-rose-400 rounded-lg px-3 py-1 rotate-[20deg]"
+            className="absolute top-8 right-6 border-4 border-rose-400 rounded-lg px-3 py-1 rotate-20"
             style={{
               opacity: showNope ? overlayOpacity : 0,
               transition: "opacity 0.1s",
