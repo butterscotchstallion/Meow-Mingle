@@ -258,24 +258,25 @@ export function Matches() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data, error: apiError } = await matchSuggestionsHandler();
-        if (apiError || !data) {
-          setError("Could not load match suggestions. Please try again.");
-          return;
-        }
-        setSuggestions(data.results as CatWithPhotos[]);
-        setIndex(0);
-      } catch {
-        setError("An unexpected error occurred.");
-      } finally {
-        setLoading(false);
+  async function load() {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: apiError } = await matchSuggestionsHandler();
+      if (apiError || !data) {
+        setError("Could not load match suggestions. Please try again.");
+        return;
       }
+      setSuggestions(data.results as CatWithPhotos[]);
+      setIndex(0);
+    } catch {
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     load();
   }, []);
 
@@ -315,7 +316,16 @@ export function Matches() {
         )}
 
         {!loading && error && (
-          <Message severity="error" text={error} className="w-full max-w-sm" />
+          <>
+            <Message
+              severity="error"
+              text={error}
+              className="w-full max-w-sm"
+            />
+            <p>
+              <Button label="Try again" onClick={() => load()} />
+            </p>
+          </>
         )}
 
         {!loading && !error && !hasCurrent && (
