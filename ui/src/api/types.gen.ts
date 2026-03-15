@@ -63,10 +63,13 @@ export type CatDetailResponse = {
 };
 
 export type CatPhoto = {
+    altText?: string | null;
     createdAt?: string | null;
     filename: string;
+    height?: number | null;
     id: string;
     order?: number | null;
+    width?: number | null;
 };
 
 export type Interest = {
@@ -266,30 +269,29 @@ export type MatchSuggestionsHandlerResponses = {
 
 export type MatchSuggestionsHandlerResponse = MatchSuggestionsHandlerResponses[keyof MatchSuggestionsHandlerResponses];
 
-export type SessionGetByIdHandlerData = {
+export type SessionGetFromCookieHandlerData = {
     body?: never;
-    path: {
-        /**
-         * Session id
-         */
-        id: string;
-    };
+    path?: never;
     query?: never;
-    url: '/api/v1/session/{id}';
+    url: '/api/v1/session';
 };
 
-export type SessionGetByIdHandlerErrors = {
+export type SessionGetFromCookieHandlerErrors = {
+    /**
+     * Session not found
+     */
+    404: unknown;
     /**
      * Internal server error
      */
     500: unknown;
 };
 
-export type SessionGetByIdHandlerResponses = {
+export type SessionGetFromCookieHandlerResponses = {
     /**
-     * Details for a specific cat
+     * Session for current user
      */
     200: CatDetailResponse;
 };
 
-export type SessionGetByIdHandlerResponse = SessionGetByIdHandlerResponses[keyof SessionGetByIdHandlerResponses];
+export type SessionGetFromCookieHandlerResponse = SessionGetFromCookieHandlerResponses[keyof SessionGetFromCookieHandlerResponses];

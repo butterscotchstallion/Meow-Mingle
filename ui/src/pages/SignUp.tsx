@@ -78,7 +78,7 @@ export function SignUp() {
             <label htmlFor="name">Name</label>
           </FloatLabel>
 
-          <FloatLabel>
+          <FloatLabel className="w-full">
             <Password
               inputId="password"
               value={password}
@@ -90,11 +90,12 @@ export function SignUp() {
               autoComplete="new-password"
               feedback={false}
               maxLength={150}
+              pt={{ root: { className: "w-full" } }}
             />
             <label htmlFor="password">Password</label>
           </FloatLabel>
 
-          <FloatLabel>
+          <FloatLabel className="w-full">
             <Password
               inputId="confirmPassword"
               value={confirmPassword}
@@ -106,6 +107,7 @@ export function SignUp() {
               autoComplete="new-password"
               feedback={false}
               maxLength={150}
+              pt={{ root: { className: "w-full" } }}
             />
             <label htmlFor="confirmPassword">Confirm Password</label>
           </FloatLabel>

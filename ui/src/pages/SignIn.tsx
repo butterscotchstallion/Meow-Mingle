@@ -72,7 +72,7 @@ export function SignIn() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <FloatLabel>
+          <FloatLabel className="w-full">
             <InputText
               id="name"
               value={name}
@@ -85,7 +85,7 @@ export function SignIn() {
             <label htmlFor="name">Name</label>
           </FloatLabel>
 
-          <FloatLabel>
+          <FloatLabel className="w-full">
             <Password
               inputId="password"
               value={password}
@@ -97,6 +97,7 @@ export function SignIn() {
               autoComplete="current-password"
               feedback={false}
               maxLength={150}
+              pt={{ root: { className: "w-full" } }}
             />
             <label htmlFor="password">Password</label>
           </FloatLabel>

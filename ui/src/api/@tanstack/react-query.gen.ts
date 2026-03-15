@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { breedsListHandler, catDetailHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetByIdHandler, signInHandler, signUpHandler } from '../sdk.gen';
-import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetByIdHandlerData, SessionGetByIdHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
+import { breedsListHandler, catDetailHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
+import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
 
 export const signInHandlerMutation = (options?: Partial<Options<SignInHandlerData>>): UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> => {
     const mutationOptions: UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> = {
@@ -127,11 +127,11 @@ export const matchSuggestionsHandlerOptions = (options?: Options<MatchSuggestion
     queryKey: matchSuggestionsHandlerQueryKey(options)
 });
 
-export const sessionGetByIdHandlerQueryKey = (options: Options<SessionGetByIdHandlerData>) => createQueryKey('sessionGetByIdHandler', options);
+export const sessionGetFromCookieHandlerQueryKey = (options?: Options<SessionGetFromCookieHandlerData>) => createQueryKey('sessionGetFromCookieHandler', options);
 
-export const sessionGetByIdHandlerOptions = (options: Options<SessionGetByIdHandlerData>) => queryOptions<SessionGetByIdHandlerResponse, DefaultError, SessionGetByIdHandlerResponse, ReturnType<typeof sessionGetByIdHandlerQueryKey>>({
+export const sessionGetFromCookieHandlerOptions = (options?: Options<SessionGetFromCookieHandlerData>) => queryOptions<SessionGetFromCookieHandlerResponse, DefaultError, SessionGetFromCookieHandlerResponse, ReturnType<typeof sessionGetFromCookieHandlerQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await sessionGetByIdHandler({
+        const { data } = await sessionGetFromCookieHandler({
             ...options,
             ...queryKey[0],
             signal,
@@ -139,5 +139,5 @@ export const sessionGetByIdHandlerOptions = (options: Options<SessionGetByIdHand
         });
         return data;
     },
-    queryKey: sessionGetByIdHandlerQueryKey(options)
+    queryKey: sessionGetFromCookieHandlerQueryKey(options)
 });

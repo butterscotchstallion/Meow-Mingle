@@ -13,10 +13,13 @@ export const zBreed = z.object({
 });
 
 export const zCatPhoto = z.object({
+    altText: z.string().nullish(),
     createdAt: z.iso.datetime().nullish(),
     filename: z.string(),
+    height: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish(),
     id: z.uuid(),
-    order: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish()
+    order: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish(),
+    width: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish()
 });
 
 export const zInterest = z.object({
@@ -172,15 +175,13 @@ export const zMatchSuggestionsHandlerData = z.object({
  */
 export const zMatchSuggestionsHandlerResponse = zMatchSuggestionsResponse;
 
-export const zSessionGetByIdHandlerData = z.object({
+export const zSessionGetFromCookieHandlerData = z.object({
     body: z.never().optional(),
-    path: z.object({
-        id: z.string()
-    }),
+    path: z.never().optional(),
     query: z.never().optional()
 });
 
 /**
- * Details for a specific cat
+ * Session for current user
  */
-export const zSessionGetByIdHandlerResponse = zCatDetailResponse;
+export const zSessionGetFromCookieHandlerResponse = zCatDetailResponse;

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { sessionGetByIdHandler } from "../api/sdk.gen";
+import { sessionGetFromCookieHandler } from "../api/sdk.gen";
 import { useAuthStore } from "../store/authStore";
 
 /**
@@ -26,7 +26,7 @@ export function useSessionSync() {
 
     if (!sessionId) return;
 
-    sessionGetByIdHandler({ path: { id: sessionId } }).then(({ data }) => {
+    sessionGetFromCookieHandler().then(({ data }) => {
       if (data?.status === "OK" && data.results) {
         setAuth(data.results, sessionId);
       } else if (data?.status === "ERROR") {
