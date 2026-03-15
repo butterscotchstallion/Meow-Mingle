@@ -2,8 +2,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { SignUp } from "./pages/SignUp";
 import { SignIn } from "./pages/SignIn";
 import { Matches } from "./pages/Matches";
+import { useSessionSync } from "./hooks/useSessionSync";
 
 export function App() {
+  useSessionSync();
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/matches" replace />} />
