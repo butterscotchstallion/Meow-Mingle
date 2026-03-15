@@ -30,3 +30,4 @@ auth-framework.toml
 .cargo
 app_config.toml
 node_modules
+.zed
