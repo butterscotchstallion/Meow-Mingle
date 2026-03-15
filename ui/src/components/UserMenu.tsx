@@ -43,7 +43,7 @@ export function UserMenu() {
   }
 
   const avatarUrl = cat.avatarFilename
-    ? `http://localhost:3000/photos/${cat.avatarFilename}`
+    ? `/images/cats/${cat.avatarFilename}`
     : undefined;
 
   return (
@@ -76,7 +76,12 @@ export function UserMenu() {
             label={cat.name.charAt(0).toUpperCase()}
             shape="circle"
             size="normal"
-            style={{ width: 40, height: 40, backgroundColor: "#7c3aed", color: "#fff" }}
+            style={{
+              width: 40,
+              height: 40,
+              backgroundColor: "#7c3aed",
+              color: "#fff",
+            }}
           />
         )}
       </button>
