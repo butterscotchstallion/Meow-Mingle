@@ -38,6 +38,10 @@ impl ApiError {
     pub fn internal(e: impl std::fmt::Display) -> Self {
         Self::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
     }
+
+    pub fn not_found() -> Self {
+        Self::new(StatusCode::NOT_FOUND, "Not found")
+    }
 }
 
 impl IntoResponse for ApiError {
