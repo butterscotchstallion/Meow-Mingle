@@ -2,7 +2,7 @@ use crate::cats::CatDetailResponse;
 use crate::handlers::common::ApiError;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
-use crate::models::session::get_cat_from_session_id;
+use crate::models::session::{get_cat_from_session_id, get_session_id_from_cookie};
 use crate::models::status::Status;
 use axum::Json;
 use axum::extract::State;
@@ -29,10 +29,11 @@ pub async fn session_get_from_cookie_handler(
     State(pool): State<PgPool>,
     cookie_manager: CookieManager,
 ) -> Result<(StatusCode, Json<CatDetailResponse>), ApiError> {
-    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
-        Ok(Some(cat)) => cat,
-        _ => return Err(ApiError::not_found()),
-    };
+    // let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+    //     Ok(Some(cat)) => cat,
+    //     _ => return Err(ApiError::not_found()),
+    // };
+    let session_id = get_session_id_from_cookie(cookie_manager);
     let row = sqlx::query_as!(
         CatRow,
         r#"
@@ -60,7 +61,7 @@ pub async fn session_get_from_cookie_handler(
             )
             AND s.session_id = $1
         "#,
-        cat.id as Uuid
+        session_id
     )
     .fetch_optional(&pool)
     .await
