@@ -61,7 +61,7 @@ export function UserMenu() {
         aria-haspopup
         aria-controls="user-menu"
         onClick={(e) => menuRef.current?.toggle(e)}
-        className="rounded-full p-0 border-2 border-transparent hover:border-purple-400 focus:border-purple-400 focus:outline-none transition-colors cursor-pointer bg-transparent"
+        className="rounded-full p-0 border-2 border-transparent hover:border-purple-500 focus:border-purple-500 focus:outline-none transition-colors cursor-pointer bg-transparent"
         style={{ lineHeight: 0 }}
       >
         {avatarUrl ? (
@@ -79,7 +79,7 @@ export function UserMenu() {
             style={{
               width: 40,
               height: 40,
-              backgroundColor: "#7c3aed",
+              backgroundColor: "#6b21a8",
               color: "#fff",
             }}
           />

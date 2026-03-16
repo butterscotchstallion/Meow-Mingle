@@ -128,9 +128,9 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
       onPointerCancel={onPointerUp}
     >
       {/* Card shell */}
-      <div className="w-full h-full rounded-3xl overflow-hidden shadow-2xl flex flex-col bg-slate-800 border border-slate-700">
+      <div className="w-full h-full pb-5 rounded-3xl overflow-hidden shadow-2xl flex flex-col bg-purple-950 border border-purple-900">
         {/* Photo area */}
-        <div className="relative flex-1 bg-slate-900 overflow-hidden">
+        <div className="relative flex-1 bg-[#12071f] overflow-hidden">
           {photoUrl ? (
             <img
               src={photoUrl}
@@ -141,7 +141,7 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
               className="w-full h-full object-cover pointer-events-none"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-600">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-purple-800">
               <i className="pi pi-image text-6xl" />
               <span className="text-sm">No photos yet</span>
             </div>
@@ -209,9 +209,9 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
         {/* Info area */}
         <div className="p-5 flex flex-col gap-3">
           <div className="flex items-baseline gap-3">
-            <h2 className="text-2xl font-bold text-slate-100">{cat.name}</h2>
+            <h2 className="text-2xl font-bold text-purple-100">{cat.name}</h2>
             {cat.age != null && (
-              <span className="text-xl text-slate-300">{cat.age}</span>
+              <span className="text-xl text-purple-300">{cat.age}</span>
             )}
             {isOnline((cat as CatWithPhotos).lastSeen) && (
               <span className="ml-auto flex items-center gap-1.5 text-xs text-emerald-400">
@@ -222,14 +222,14 @@ function SwipeCard({ cat, onSwipe, isTop }: SwipeCardProps) {
           </div>
 
           {cat.breedName && (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-sm text-purple-400">
               <i className="pi pi-tag text-xs" />
               <span>{cat.breedName}</span>
             </div>
           )}
 
           {cat.biography && (
-            <p className="text-sm text-slate-300 line-clamp-3 leading-relaxed">
+            <p className="text-sm text-purple-300 line-clamp-3 leading-relaxed">
               {cat.biography}
             </p>
           )}
@@ -296,12 +296,12 @@ export function Matches() {
   const hasCurrent = remaining.length > 0;
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-900">
+    <div className="flex flex-col min-h-screen bg-[#12071f]">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-purple-950">
         <Link
           to="/matches"
-          className="text-xl font-bold text-slate-100 hover:text-purple-400 transition-colors no-underline"
+          className="text-xl font-bold text-purple-100 hover:text-purple-500 transition-colors no-underline"
         >
           🐱 Meow Mingle
         </Link>
@@ -313,7 +313,7 @@ export function Matches() {
         {loading && (
           <div className="flex flex-col items-center gap-4">
             <ProgressSpinner style={{ width: 56, height: 56 }} />
-            <p className="text-slate-400 text-sm">Finding matches…</p>
+            <p className="text-purple-400 text-sm">Finding matches…</p>
           </div>
         )}
 
@@ -333,8 +333,10 @@ export function Matches() {
         {!loading && !error && !hasCurrent && (
           <div className="flex flex-col items-center gap-4 text-center">
             <span className="text-7xl">😿</span>
-            <h2 className="text-2xl font-bold text-slate-100">No more cats!</h2>
-            <p className="text-slate-400 text-sm max-w-xs">
+            <h2 className="text-2xl font-bold text-purple-100">
+              No more cats!
+            </h2>
+            <p className="text-purple-400 text-sm max-w-xs">
               You've seen everyone for now. Check back later for new matches.
             </p>
           </div>

@@ -3,6 +3,32 @@
 @import "primereact/resources/primereact.min.css";
 @import "primeicons/primeicons.css";
 
+:root {
+    --bg-deep: #12071f;
+}
+
 .p-password {
     display: flex;
+}
+
+/* Override browser blue defaults to match lara-dark-purple theme */
+:root {
+    accent-color: #a855f7;
+}
+
+*:focus-visible {
+    outline-color: #a855f7;
+}
+
+::selection {
+    background-color: #6b21a8;
+    color: #ffffff;
+}
+
+a {
+    color: #a855f7;
+}
+
+a:hover {
+    color: #c084fc;
 }

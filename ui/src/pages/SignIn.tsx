@@ -64,11 +64,11 @@ export function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-900">
+    <div className="flex min-h-screen items-center justify-center bg-[#12071f]">
       <Card className="w-full max-w-md shadow-lg">
         <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-slate-100">🐱 Meow Mingle</h1>
-          <p className="mt-1 text-slate-400">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-purple-100">🐱 Meow Mingle</h1>
+          <p className="mt-1 text-purple-400">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -114,9 +114,9 @@ export function SignIn() {
             className="w-full"
           />
 
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm text-purple-400">
             Don't have an account?{" "}
-            <a href="/signup" className="text-purple-400 hover:underline">
+            <a href="/signup" className="text-purple-500 hover:underline">
               Sign up
             </a>
           </p>
