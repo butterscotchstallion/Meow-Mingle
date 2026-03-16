@@ -2,14 +2,13 @@ use crate::cats::CatDetailResponse;
 use crate::handlers::common::ApiError;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
-use crate::models::session::{get_cat_from_session_id, get_session_id_from_cookie};
+use crate::models::session::get_session_id_from_cookie;
 use crate::models::status::Status;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum_cookie::CookieManager;
 use sqlx::{Error, PgPool};
-use uuid::Uuid;
 
 pub mod routes {
     pub const SESSION_GET_FROM_COOKIE: &str = "/api/v1/session";
