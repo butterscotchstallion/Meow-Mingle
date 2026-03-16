@@ -6,6 +6,7 @@ export interface AuthState {
   cat: Cat | null;
   sessionId: string | null;
   setAuth: (cat: Cat, sessionId: string) => void;
+  setCat: (cat: Cat) => void;
   clearAuth: () => void;
 }
 
@@ -15,6 +16,7 @@ export const useAuthStore = create<AuthState>()(
       cat: null,
       sessionId: null,
       setAuth: (cat, sessionId) => set({ cat, sessionId }),
+      setCat: (cat) => set({ cat }),
       clearAuth: () => set({ cat: null, sessionId: null }),
     }),
     {

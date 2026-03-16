@@ -13,7 +13,7 @@ import { useAuthStore } from "../store/authStore";
 export function useSessionSync() {
   const location = useLocation();
   const sessionId = useAuthStore((s) => s.sessionId);
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const setCat = useAuthStore((s) => s.setCat);
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
   // Track the last pathname we already synced so a re-render of App that
@@ -28,13 +28,11 @@ export function useSessionSync() {
 
     sessionGetFromCookieHandler().then(({ data }) => {
       if (data?.status === "OK" && data.results) {
-        setAuth(data.results, sessionId);
-      } else if (data?.status === "ERROR") {
-        // Session no longer valid on the server side.
-        clearAuth();
+        setCat(data.results);
+        console.info(`Updated cat from session: `, data.results);
       }
     });
     // Intentionally no error handling here — the 401 interceptor in main.tsx
     // already calls clearAuth() and redirects on HTTP 401 responses.
-  }, [location.pathname, sessionId, setAuth, clearAuth]);
+  }, [location.pathname, sessionId, setCat, clearAuth]);
 }
