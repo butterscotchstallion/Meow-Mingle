@@ -51,3 +51,7 @@ path = "src/lib.rs"
 
 [package.metadata.llvm-cov]
 ignore-filename-regex = "src/bin/.*"
+
+[profile.dev]
+debug = true
+opt-level = 0

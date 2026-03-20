@@ -10,16 +10,17 @@ use axum::http::StatusCode;
 
 use axum_cookie::CookieManager;
 use serde_with::{StringWithSeparator, formats::CommaSeparator, serde_as};
-use sqlx::{Error, PgPool, Postgres, QueryBuilder};
+use sqlx::{PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub mod routes {
     pub const MATCHES_LIST: &str = "/api/v1/matches";
     pub const MATCH_SUGGESTIONS: &str = "/api/v1/matches/suggestions";
+    pub const MATCH_ADD: &str = "/api/v1/matches";
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, sqlx::Type, utoipa::ToSchema)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, sqlx::Type, utoipa::ToSchema, PartialEq)]
 #[sqlx(type_name = "match_status", rename_all = "lowercase")]
 pub enum MatchStatus {
     Pending,
@@ -27,12 +28,12 @@ pub enum MatchStatus {
     Declined,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema, sqlx::FromRow)]
 pub struct Match {
     pub id: Uuid,
     pub initiator_id: Uuid,
     pub target_id: Uuid,
-    pub status: MatchStatus,
+    pub status: Option<MatchStatus>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
@@ -47,6 +48,19 @@ pub struct MatchSuggestionsResponse {
     pub results: Vec<Cat>,
 }
 
+#[derive(serde::Serialize, Debug, serde::Deserialize, utoipa::ToSchema)]
+pub struct MatchAddedResponse {
+    pub status: Status,
+    pub message: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct MatchAddRequest {
+    pub initiator_id: Uuid,
+    pub target_id: Uuid,
+    pub status: MatchStatus,
+}
+
 #[serde_as]
 #[derive(serde::Deserialize, Default)]
 #[serde(default)]
@@ -55,6 +69,15 @@ pub struct MatchSuggestionAgeFilter {
     pub gt: i32,
     #[serde_as(as = "StringWithSeparator::<CommaSeparator, Uuid>")]
     pub interest_ids: Vec<Uuid>,
+}
+
+#[serde_as]
+#[derive(serde::Deserialize, Default)]
+#[serde(default)]
+pub struct MatchListFilters {
+    initiator_id: Option<Uuid>,
+    target_id: Option<Uuid>,
+    status: Option<MatchStatus>,
 }
 
 #[axum::debug_handler]
@@ -70,26 +93,48 @@ pub struct MatchSuggestionAgeFilter {
 pub async fn matches_list_handler(
     State(pool): State<PgPool>,
     cookie_manager: CookieManager,
+    Query(match_list_filters): Query<MatchListFilters>,
 ) -> Result<(StatusCode, Json<MatchesListResponse>), ApiError> {
     let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
 
-    let matches = sqlx::query_as!(
-        Match,
-        r#"
-        SELECT id, initiator_id, target_id, status AS "status: MatchStatus"
-        FROM matches
-        WHERE 1=1
-        AND (initiator_id = $1 OR target_id = $1)
-        AND matches.status != 'declined'
-        "#,
-        cat.id
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e: Error| ApiError::internal(e))?;
+    let mut query: QueryBuilder<Postgres> =
+        QueryBuilder::new(r#"SELECT id, initiator_id, target_id, status FROM matches WHERE 1=1"#);
+
+    // Always scope results to the authenticated cat
+    query.push(" AND (initiator_id = ");
+    query.push_bind(cat.id);
+    query.push(" OR target_id = ");
+    query.push_bind(cat.id);
+    query.push(")");
+
+    // Optional: filter by initiator
+    if let Some(initiator_id) = match_list_filters.initiator_id {
+        query.push(" AND initiator_id = ");
+        query.push_bind(initiator_id);
+    }
+
+    // Optional: filter by target
+    if let Some(target_id) = match_list_filters.target_id {
+        query.push(" AND target_id = ");
+        query.push_bind(target_id);
+    }
+
+    // Optional: filter by status — default to excluding declined when no status is provided
+    if let Some(status) = match_list_filters.status {
+        query.push(" AND status = ");
+        query.push_bind(status);
+    } else {
+        query.push(" AND status != 'declined'");
+    }
+
+    let matches = query
+        .build_query_as::<Match>()
+        .fetch_all(&pool)
+        .await
+        .map_err(|e: sqlx::Error| ApiError::internal(e))?;
 
     Ok((
         StatusCode::OK,
@@ -171,7 +216,7 @@ pub async fn match_suggestions_handler(
         .build_query_as::<CatRow>()
         .fetch_all(&pool)
         .await
-        .map_err(|e: Error| ApiError::internal(e))?;
+        .map_err(|e: sqlx::Error| ApiError::internal(e))?;
 
     let mut suggestions: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
     populate_interests(&pool, &mut suggestions)
@@ -186,6 +231,52 @@ pub async fn match_suggestions_handler(
         Json(MatchSuggestionsResponse {
             status: Status::Ok,
             results: suggestions,
+        }),
+    ))
+}
+
+// Also handles updates!
+#[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = routes::MATCH_ADD,
+    responses(
+        (status = 201, description = "Match created", body = MatchAddedResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn match_add_update_handler(
+    State(pool): State<PgPool>,
+    cookie_manager: CookieManager,
+    Json(match_request): Json<MatchAddRequest>,
+) -> Result<(StatusCode, Json<MatchAddedResponse>), ApiError> {
+    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+        Ok(Some(cat)) => cat,
+        _ => return Err(ApiError::unauthorized()),
+    };
+    let initiator_id = cat.id;
+
+    sqlx::query(
+        r#"
+        INSERT INTO matches (initiator_id, target_id, status)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (initiator_id, target_id)
+        DO UPDATE SET status = $3
+    "#,
+    )
+    .bind(initiator_id)
+    .bind(match_request.target_id)
+    .bind(match_request.status)
+    .execute(&pool)
+    .await
+    .map_err(|e| ApiError::internal(e))?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(MatchAddedResponse {
+            status: Status::Ok,
+            message: String::from("Match created"),
         }),
     ))
 }

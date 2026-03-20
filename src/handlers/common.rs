@@ -42,6 +42,10 @@ impl ApiError {
     pub fn not_found() -> Self {
         Self::new(StatusCode::NOT_FOUND, "Not found")
     }
+
+    pub fn unprocessable_request(e: impl std::fmt::Display) -> Self {
+        Self::new(StatusCode::UNPROCESSABLE_ENTITY, e.to_string())
+    }
 }
 
 impl IntoResponse for ApiError {
