@@ -80,8 +80,19 @@ export type Interest = {
 export type Match = {
     id: string;
     initiator_id: string;
+    status?: null | MatchStatus;
+    target_id: string;
+};
+
+export type MatchAddRequest = {
+    initiator_id: string;
     status: MatchStatus;
     target_id: string;
+};
+
+export type MatchAddedResponse = {
+    message: string;
+    status: Status;
 };
 
 export enum MatchStatus {
@@ -241,6 +252,33 @@ export type MatchesListHandlerResponses = {
 };
 
 export type MatchesListHandlerResponse = MatchesListHandlerResponses[keyof MatchesListHandlerResponses];
+
+export type MatchAddUpdateHandlerData = {
+    body: MatchAddRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/matches';
+};
+
+export type MatchAddUpdateHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type MatchAddUpdateHandlerResponses = {
+    /**
+     * Match created
+     */
+    201: MatchAddedResponse;
+};
+
+export type MatchAddUpdateHandlerResponse = MatchAddUpdateHandlerResponses[keyof MatchAddUpdateHandlerResponses];
 
 export type MatchSuggestionsHandlerData = {
     body?: never;

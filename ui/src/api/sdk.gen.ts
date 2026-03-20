@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BreedsListHandlerData, BreedsListHandlerErrors, BreedsListHandlerResponses, CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerErrors, SessionGetFromCookieHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
+import type { BreedsListHandlerData, BreedsListHandlerErrors, BreedsListHandlerResponses, CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, MatchAddUpdateHandlerData, MatchAddUpdateHandlerErrors, MatchAddUpdateHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerErrors, SessionGetFromCookieHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -41,6 +41,15 @@ export const breedsListHandler = <ThrowOnError extends boolean = false>(options?
 export const catDetailHandler = <ThrowOnError extends boolean = false>(options: Options<CatDetailHandlerData, ThrowOnError>) => (options.client ?? client).get<CatDetailHandlerResponses, CatDetailHandlerErrors, ThrowOnError>({ url: '/api/v1/cats/{id}', ...options });
 
 export const matchesListHandler = <ThrowOnError extends boolean = false>(options?: Options<MatchesListHandlerData, ThrowOnError>) => (options?.client ?? client).get<MatchesListHandlerResponses, MatchesListHandlerErrors, ThrowOnError>({ url: '/api/v1/matches', ...options });
+
+export const matchAddUpdateHandler = <ThrowOnError extends boolean = false>(options: Options<MatchAddUpdateHandlerData, ThrowOnError>) => (options.client ?? client).post<MatchAddUpdateHandlerResponses, MatchAddUpdateHandlerErrors, ThrowOnError>({
+    url: '/api/v1/matches',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const matchSuggestionsHandler = <ThrowOnError extends boolean = false>(options?: Options<MatchSuggestionsHandlerData, ThrowOnError>) => (options?.client ?? client).get<MatchSuggestionsHandlerResponses, MatchSuggestionsHandlerErrors, ThrowOnError>({ url: '/api/v1/matches/suggestions', ...options });
 

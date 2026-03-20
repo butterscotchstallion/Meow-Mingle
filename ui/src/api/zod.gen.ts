@@ -58,6 +58,12 @@ export const zMatchStatus = z.enum([
 export const zMatch = z.object({
     id: z.uuid(),
     initiator_id: z.uuid(),
+    status: zMatchStatus.nullish(),
+    target_id: z.uuid()
+});
+
+export const zMatchAddRequest = z.object({
+    initiator_id: z.uuid(),
     status: zMatchStatus,
     target_id: z.uuid()
 });
@@ -94,6 +100,11 @@ export const zBreedsListResponse = z.object({
 export const zCatDetailResponse = z.object({
     message: z.string().nullish(),
     results: zCat.nullish(),
+    status: zStatus
+});
+
+export const zMatchAddedResponse = z.object({
+    message: z.string(),
     status: zStatus
 });
 
@@ -163,6 +174,17 @@ export const zMatchesListHandlerData = z.object({
  * List of all matches for a specific cat
  */
 export const zMatchesListHandlerResponse = zMatchesListResponse;
+
+export const zMatchAddUpdateHandlerData = z.object({
+    body: zMatchAddRequest,
+    path: z.never().optional(),
+    query: z.never().optional()
+});
+
+/**
+ * Match created
+ */
+export const zMatchAddUpdateHandlerResponse = zMatchAddedResponse;
 
 export const zMatchSuggestionsHandlerData = z.object({
     body: z.never().optional(),

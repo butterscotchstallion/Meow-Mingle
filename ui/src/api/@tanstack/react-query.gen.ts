@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { breedsListHandler, catDetailHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
-import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
+import { breedsListHandler, catDetailHandler, matchAddUpdateHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
+import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, MatchAddUpdateHandlerData, MatchAddUpdateHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
 
 export const signInHandlerMutation = (options?: Partial<Options<SignInHandlerData>>): UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> => {
     const mutationOptions: UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> = {
@@ -111,6 +111,20 @@ export const matchesListHandlerOptions = (options?: Options<MatchesListHandlerDa
     },
     queryKey: matchesListHandlerQueryKey(options)
 });
+
+export const matchAddUpdateHandlerMutation = (options?: Partial<Options<MatchAddUpdateHandlerData>>): UseMutationOptions<MatchAddUpdateHandlerResponse, DefaultError, Options<MatchAddUpdateHandlerData>> => {
+    const mutationOptions: UseMutationOptions<MatchAddUpdateHandlerResponse, DefaultError, Options<MatchAddUpdateHandlerData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await matchAddUpdateHandler({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const matchSuggestionsHandlerQueryKey = (options?: Options<MatchSuggestionsHandlerData>) => createQueryKey('matchSuggestionsHandler', options);
 
