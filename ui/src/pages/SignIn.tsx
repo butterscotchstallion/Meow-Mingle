@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
@@ -29,8 +29,16 @@ export function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [shaking, setShaking] = useState(false);
+  const shakeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function triggerShake() {
+    if (shakeTimeout.current) clearTimeout(shakeTimeout.current);
+    setShaking(true);
+    shakeTimeout.current = setTimeout(() => setShaking(false), 500);
+  }
+
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -42,6 +50,7 @@ export function SignIn() {
 
       if (apiError || !data) {
         setError("Sign in failed. Please try again.");
+        triggerShake();
         return;
       }
 
@@ -51,6 +60,7 @@ export function SignIn() {
 
       if (rich.status !== "OK" || !rich.results) {
         setError(rich.message ?? "Sign in failed. Please try again.");
+        triggerShake();
         return;
       }
 
@@ -58,6 +68,7 @@ export function SignIn() {
       navigate("/matches");
     } catch {
       setError("An unexpected error occurred. Please try again.");
+      triggerShake();
     } finally {
       setLoading(false);
     }
@@ -65,7 +76,22 @@ export function SignIn() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#12071f]">
-      <Card className="w-full max-w-md shadow-lg">
+      <style>{`
+        @keyframes shake {
+          0%   { transform: translateX(0); }
+          15%  { transform: translateX(-8px); }
+          30%  { transform: translateX(8px); }
+          45%  { transform: translateX(-6px); }
+          60%  { transform: translateX(6px); }
+          75%  { transform: translateX(-3px); }
+          90%  { transform: translateX(3px); }
+          100% { transform: translateX(0); }
+        }
+        .shake {
+          animation: shake 0.5s ease-in-out;
+        }
+      `}</style>
+      <Card className={`w-full max-w-md shadow-lg${shaking ? " shake" : ""}`}>
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-purple-100">🐱 Meow Mingle</h1>
           <p className="mt-1 text-purple-400">Sign in to your account</p>
