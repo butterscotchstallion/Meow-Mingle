@@ -30,6 +30,7 @@ axum-cookie = "0.2.4"
 names = "0.14.0"
 serde_with = "3.18.0"
 tower-http = { version = "0.6", features = ["cors"] }
+anyhow = "1.0.102"
 
 [dev-dependencies]
 axum-test = "19.1.1"

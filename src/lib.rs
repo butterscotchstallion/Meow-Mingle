@@ -26,6 +26,7 @@ use utoipa_swagger_ui::SwaggerUi;
         crate::handlers::matches::match_add_update_handler,
         crate::handlers::session::session_get_from_cookie_handler,
         crate::handlers::breeds::breeds_list_handler,
+        crate::handlers::rbac::cat_roles_list_handler
     ),
     components(
         schemas(
@@ -39,12 +40,14 @@ use utoipa_swagger_ui::SwaggerUi;
             crate::handlers::auth::AuthSignUpResponse,
             crate::handlers::breeds::Breed,
             crate::handlers::breeds::BreedsListResponse,
+            crate::handlers::rbac::CatRoleListResponse
         )
     ),
     tags(
         (name = "cats", description = "Cat endpoints"),
         (name = "matches", description = "Match endpoints"),
         (name = "auth", description = "Auth endpoints"),
+        (name = "rbac", description = "Role Based Access Control endpoints")
     )
 )]
 pub struct ApiDoc;
@@ -63,6 +66,8 @@ use crate::handlers::matches::routes::{MATCH_ADD, MATCH_SUGGESTIONS, MATCHES_LIS
 use crate::handlers::matches::{
     match_add_update_handler, match_suggestions_handler, matches_list_handler,
 };
+use crate::handlers::rbac::cat_roles_list_handler;
+use crate::handlers::rbac::routes::CAT_ROLE_LIST;
 use crate::handlers::session::routes::*;
 use handlers::auth::*;
 use handlers::cats::*;
@@ -93,6 +98,7 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(MATCH_SUGGESTIONS, get(match_suggestions_handler))
         .route(MATCH_ADD, axum::routing::post(match_add_update_handler))
         .route(BREEDS_LIST, get(breeds_list_handler))
+        .route(CAT_ROLE_LIST, get(cat_roles_list_handler))
         .with_state(pool)
         .layer(CookieLayer::default())
         .layer(cors);
