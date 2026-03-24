@@ -10,7 +10,7 @@ pub struct CatInterest {
     pub interest_name: String,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, utoipa::ToSchema)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, utoipa::ToSchema, Clone)]
 pub struct Interest {
     pub id: Uuid,
     pub name: String,

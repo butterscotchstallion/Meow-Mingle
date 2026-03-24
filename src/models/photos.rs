@@ -4,7 +4,7 @@ use sqlx::{Error, PgPool};
 use std::collections::HashMap;
 use time::serde::rfc3339;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, utoipa::ToSchema)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, utoipa::ToSchema, Clone)]
 pub struct CatPhoto {
     pub id: Uuid,
     pub order: Option<i32>,

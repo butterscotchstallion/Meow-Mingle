@@ -6,6 +6,12 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct GenericResponse {
+    pub status: Status,
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ApiErrorBody {
     pub status: Status,
     pub message: String,

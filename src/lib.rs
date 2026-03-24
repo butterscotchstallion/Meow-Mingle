@@ -1,6 +1,6 @@
 use axum::Router;
 use axum::http::{HeaderName, HeaderValue, Method};
-use axum::routing::get;
+use axum::routing::{get, put};
 use dotenv::dotenv;
 use sqlx::{PgPool, Pool, Postgres};
 use std::env;
@@ -19,6 +19,8 @@ use utoipa_swagger_ui::SwaggerUi;
     ),
     paths(
         crate::handlers::cats::cat_detail_handler,
+        crate::handlers::cats::cat_session_profile_handler,
+        crate::handlers::cats::cat_update_profile_handler,
         crate::handlers::auth::sign_in_handler,
         crate::handlers::auth::sign_up_handler,
         crate::handlers::matches::matches_list_handler,
@@ -32,6 +34,7 @@ use utoipa_swagger_ui::SwaggerUi;
         schemas(
             crate::models::cat::Cat,
             crate::handlers::cats::CatDetailResponse,
+            crate::handlers::common::GenericResponse,
             crate::handlers::matches::Match,
             crate::handlers::matches::MatchStatus,
             crate::handlers::matches::MatchesListResponse,
@@ -62,6 +65,7 @@ use crate::handlers::auth::routes::{AUTH_SIGN_IN, AUTH_SIGN_UP};
 use crate::handlers::breeds::breeds_list_handler;
 use crate::handlers::breeds::routes::BREEDS_LIST;
 pub use crate::handlers::cats;
+use crate::handlers::cats::routes::CAT_SESSION_PROFILE;
 use crate::handlers::matches::routes::{MATCH_ADD, MATCH_SUGGESTIONS, MATCHES_LIST};
 use crate::handlers::matches::{
     match_add_update_handler, match_suggestions_handler, matches_list_handler,
@@ -78,7 +82,7 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .allow_origin(AllowOrigin::exact(HeaderValue::from_static(
             "http://localhost:5173",
         )))
-        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::OPTIONS])
         .allow_headers([
             HeaderName::from_static("content-type"),
             HeaderName::from_static("authorization"),
@@ -88,6 +92,8 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
 
     let api_router = Router::new()
         .route(CAT_DETAIL, get(cat_detail_handler))
+        .route(CAT_SESSION_PROFILE, get(cat_session_profile_handler))
+        .route(CAT_SESSION_PROFILE, put(cat_update_profile_handler))
         .route(
             SESSION_GET_FROM_COOKIE,
             get(session_get_from_cookie_handler),
