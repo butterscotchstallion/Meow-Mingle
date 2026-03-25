@@ -1,11 +1,13 @@
 use axum::http::StatusCode;
 use cookie::Cookie;
-use meow_mingle::cats::{CatDetailResponse, routes};
+use meow_mingle::cats::routes;
 use meow_mingle::models::photos::CatPhoto;
 use meow_mingle::models::status::Status;
 mod common;
-use crate::common::auth_helpers::sign_up_and_get_session_id;
-use crate::common::cat_helpers::get_cat_session_profile_and_verify;
+use crate::common::auth_helpers::{sign_up_and_get_session_and_cat_id, sign_up_and_get_session_id};
+use crate::common::cat_helpers::{
+    get_cat_profile_by_id_and_verify, get_cat_session_profile_and_verify,
+};
 use common::helpers::get_server;
 use meow_mingle::handlers::cats::CatProfileUpdatePayload;
 use meow_mingle::handlers::common::GenericResponse;
@@ -13,40 +15,16 @@ use meow_mingle::models::interests::Interest;
 use time::OffsetDateTime;
 
 #[tokio::test]
-async fn test_cats_get_cat_detail() {
-    let server = get_server().await;
-    let cfg = meow_mingle::config::load_config();
-    let cat_id = cfg.test_users.unprivileged_id.to_string();
-    assert_eq!(cat_id.len(), 36, "Expected a UUID, but got {}", cat_id);
+async fn test_get_cat_detail_by_cat_id() {
+    let (session_id, cat_id) = sign_up_and_get_session_and_cat_id().await;
+    let cat_id = String::from(cat_id);
+    get_cat_profile_by_id_and_verify(session_id, &cat_id).await;
+}
 
+#[tokio::test]
+async fn test_get_cat_profile_from_session() {
     let session_id: String = sign_up_and_get_session_id().await;
-
-    assert!(
-        routes::CAT_DETAIL.contains("{id}"),
-        "cat detail URL doesn't have id!"
-    );
-
-    let url = routes::CAT_DETAIL.replace("{id}", &cat_id);
-    let response = server
-        .get(&url)
-        .add_cookie(Cookie::new(
-            meow_mingle::models::session::SESSION_COOKIE_NAME,
-            session_id.to_string(),
-        ))
-        .await;
-
-    response.assert_status(StatusCode::OK);
-
-    let body = response.json::<CatDetailResponse>();
-
-    let cat = body
-        .results
-        .as_ref()
-        .expect("Expected a cat in the response results, but got None");
-    assert_eq!(body.status, Status::Ok);
-    assert_eq!(cat.name, cfg.test_users.unprivileged_username);
-    assert_eq!(String::from(cat.id), cat_id);
-    assert!(!cat.interests.is_empty());
+    get_cat_session_profile_and_verify(session_id).await;
 }
 
 #[tokio::test]
