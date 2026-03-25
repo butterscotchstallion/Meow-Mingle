@@ -55,14 +55,7 @@ export const matchSuggestionsHandler = <ThrowOnError extends boolean = false>(op
 
 export const catSessionProfileHandler = <ThrowOnError extends boolean = false>(options?: Options<CatSessionProfileHandlerData, ThrowOnError>) => (options?.client ?? client).get<CatSessionProfileHandlerResponses, CatSessionProfileHandlerErrors, ThrowOnError>({ url: '/api/v1/profile', ...options });
 
-export const catUpdateProfileHandler = <ThrowOnError extends boolean = false>(options: Options<CatUpdateProfileHandlerData, ThrowOnError>) => (options.client ?? client).put<CatUpdateProfileHandlerResponses, CatUpdateProfileHandlerErrors, ThrowOnError>({
-    url: '/api/v1/profile',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+export const catUpdateProfileHandler = <ThrowOnError extends boolean = false>(options?: Options<CatUpdateProfileHandlerData, ThrowOnError>) => (options?.client ?? client).put<CatUpdateProfileHandlerResponses, CatUpdateProfileHandlerErrors, ThrowOnError>({ url: '/api/v1/profile', ...options });
 
 export const catRolesListHandler = <ThrowOnError extends boolean = false>(options?: Options<CatRolesListHandlerData, ThrowOnError>) => (options?.client ?? client).get<CatRolesListHandlerResponses, CatRolesListHandlerErrors, ThrowOnError>({ url: '/api/v1/roles', ...options });
 

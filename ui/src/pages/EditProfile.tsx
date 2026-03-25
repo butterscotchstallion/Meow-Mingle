@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
@@ -8,12 +8,16 @@ import { Message } from "primereact/message";
 import { FloatLabel } from "primereact/floatlabel";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { UserMenu } from "../components/UserMenu";
-import {
-  catSessionProfileHandler,
-  catUpdateProfileHandler,
-} from "../api/sdk.gen";
+import { catSessionProfileHandler } from "../api/sdk.gen";
 import { useAuthStore } from "../store/authStore";
-import type { Cat, Interest, CatPhoto } from "../api/types.gen";
+import type { Cat } from "../api/types.gen";
+
+const MAX_PHOTOS = 6;
+
+interface PhotoPreview {
+  file: File;
+  previewUrl: string;
+}
 
 export function EditProfile() {
   const setCat = useAuthStore((s) => s.setCat);
@@ -28,10 +32,9 @@ export function EditProfile() {
   const [biography, setBiography] = useState("");
   const [avatarFilename, setAvatarFilename] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [newPhotos, setNewPhotos] = useState<PhotoPreview[]>([]);
 
-  // Read-only data kept for the PUT payload
-  const [interests, setInterests] = useState<Interest[]>([]);
-  const [photos, setPhotos] = useState<CatPhoto[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -50,10 +53,7 @@ export function EditProfile() {
         }
         setBiography(cat.biography ?? "");
         setAvatarFilename(cat.avatarFilename ?? "");
-        // birthDate comes as an ISO string; slice to yyyy-MM-dd for the date input
         setBirthDate(cat.birthDate ? cat.birthDate.slice(0, 10) : "");
-        setInterests(cat.interests ?? []);
-        setPhotos(cat.photos ?? []);
       } catch {
         setLoadError(
           "An unexpected error occurred while loading your profile.",
@@ -66,25 +66,65 @@ export function EditProfile() {
     fetchProfile();
   }, []);
 
-  async function handleSubmit(e: React.SubmitEvent) {
+  // Revoke object URLs on unmount to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      newPhotos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+  }, [newPhotos]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+
+    const remaining = MAX_PHOTOS - newPhotos.length;
+    const accepted = files.slice(0, remaining);
+
+    const previews: PhotoPreview[] = accepted.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
+    setNewPhotos((prev) => [...prev, ...previews]);
+    // Reset the input so the same file can be re-added after removal
+    e.target.value = "";
+  }
+
+  function removePhoto(index: number) {
+    setNewPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaveError(null);
     setSaveSuccess(false);
     setSaving(true);
 
     try {
-      const { data, error: apiError } = await catUpdateProfileHandler({
-        body: {
-          biography,
-          avatarFilename,
-          birthDate,
-          interests,
-          photos,
-        },
+      const form = new FormData();
+      form.append("biography", biography);
+      form.append("avatar_filename", avatarFilename);
+      // Convert yyyy-MM-dd to a full RFC 3339 timestamp the server can parse
+      if (birthDate) {
+        form.append("birth_date", new Date(birthDate).toISOString());
+      }
+      for (const photo of newPhotos) {
+        form.append("photo", photo.file, photo.file.name);
+      }
+
+      const res = await fetch("/api/v1/profile", {
+        method: "PUT",
+        body: form,
+        credentials: "include",
       });
 
-      if (apiError || !data) {
-        setSaveError("Could not save your profile. Please try again.");
+      if (!res.ok) {
+        setSaveError(
+          `Could not save your profile (${res.status}). Please try again.`,
+        );
         return;
       }
 
@@ -96,6 +136,8 @@ export function EditProfile() {
         setCat(updatedCat);
       }
 
+      // Clear staged photos after a successful save
+      setNewPhotos([]);
       setSaveSuccess(true);
     } catch {
       setSaveError("An unexpected error occurred while saving.");
@@ -120,7 +162,8 @@ export function EditProfile() {
       {/* Main */}
       <main className="flex-1 flex flex-col items-center py-10 px-4">
         <Card className="w-full max-w-lg shadow-lg">
-          <div className="mb-6">
+          {/* Heading */}
+          <div className="mb-8">
             <h1 className="text-2xl font-bold text-purple-100">Edit Profile</h1>
             <p className="mt-1 text-purple-400 text-sm">
               Update your public profile information.
@@ -139,7 +182,7 @@ export function EditProfile() {
           )}
 
           {!loading && !loadError && (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-8">
               {/* Avatar filename */}
               <FloatLabel className="w-full">
                 <InputText
@@ -177,6 +220,63 @@ export function EditProfile() {
                 />
                 <label htmlFor="biography">Biography</label>
               </FloatLabel>
+
+              {/* Photo uploads */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-purple-200">
+                    Photos
+                  </span>
+                  <span className="text-xs text-purple-500">
+                    {newPhotos.length} / {MAX_PHOTOS}
+                  </span>
+                </div>
+
+                {/* Preview grid */}
+                {newPhotos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {newPhotos.map((photo, i) => (
+                      <div key={i} className="relative group aspect-square">
+                        <img
+                          src={photo.previewUrl}
+                          alt={`Photo ${i + 1}`}
+                          className="w-full h-full object-cover rounded-lg border border-purple-800"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(i)}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
+                          aria-label={`Remove photo ${i + 1}`}
+                        >
+                          <i className="pi pi-times text-xs" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add photos button */}
+                {newPhotos.length < MAX_PHOTOS && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    <Button
+                      type="button"
+                      label="Add photos"
+                      icon="pi pi-image"
+                      outlined
+                      className="w-full"
+                      onClick={() => fileInputRef.current?.click()}
+                    />
+                  </>
+                )}
+              </div>
 
               {saveError && (
                 <Message severity="error" text={saveError} className="w-full" />

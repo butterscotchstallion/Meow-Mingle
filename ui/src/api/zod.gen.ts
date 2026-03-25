@@ -49,14 +49,6 @@ export const zAuthSignUpResponseResults = z.object({
     session_id: z.string()
 });
 
-export const zCatProfileUpdatePayload = z.object({
-    avatarFilename: z.string(),
-    biography: z.string(),
-    birthDate: z.iso.datetime(),
-    interests: z.array(zInterest),
-    photos: z.array(zCatPhoto)
-});
-
 export const zMatchStatus = z.enum([
     'Pending',
     'Accepted',
@@ -233,7 +225,7 @@ export const zCatSessionProfileHandlerData = z.object({
 export const zCatSessionProfileHandlerResponse = zCatDetailResponse;
 
 export const zCatUpdateProfileHandlerData = z.object({
-    body: zCatProfileUpdatePayload,
+    body: z.never().optional(),
     path: z.never().optional(),
     query: z.never().optional()
 });

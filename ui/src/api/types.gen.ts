@@ -72,14 +72,6 @@ export type CatPhoto = {
     width?: number | null;
 };
 
-export type CatProfileUpdatePayload = {
-    avatarFilename: string;
-    biography: string;
-    birthDate: string;
-    interests: Array<Interest>;
-    photos: Array<CatPhoto>;
-};
-
 export type CatRoleListResponse = {
     results: Array<Role>;
     status: Status;
@@ -359,7 +351,7 @@ export type CatSessionProfileHandlerResponses = {
 export type CatSessionProfileHandlerResponse = CatSessionProfileHandlerResponses[keyof CatSessionProfileHandlerResponses];
 
 export type CatUpdateProfileHandlerData = {
-    body: CatProfileUpdatePayload;
+    body?: never;
     path?: never;
     query?: never;
     url: '/api/v1/profile';
