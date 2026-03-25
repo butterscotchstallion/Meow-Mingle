@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { breedsListHandler, catDetailHandler, matchAddUpdateHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
-import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, MatchAddUpdateHandlerData, MatchAddUpdateHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
+import { breedsListHandler, catDetailHandler, catRolesListHandler, catSessionProfileHandler, catUpdateProfileHandler, matchAddUpdateHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
+import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, CatRolesListHandlerData, CatRolesListHandlerResponse, CatSessionProfileHandlerData, CatSessionProfileHandlerResponse, CatUpdateProfileHandlerData, CatUpdateProfileHandlerResponse, MatchAddUpdateHandlerData, MatchAddUpdateHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
 
 export const signInHandlerMutation = (options?: Partial<Options<SignInHandlerData>>): UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> => {
     const mutationOptions: UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> = {
@@ -139,6 +139,50 @@ export const matchSuggestionsHandlerOptions = (options?: Options<MatchSuggestion
         return data;
     },
     queryKey: matchSuggestionsHandlerQueryKey(options)
+});
+
+export const catSessionProfileHandlerQueryKey = (options?: Options<CatSessionProfileHandlerData>) => createQueryKey('catSessionProfileHandler', options);
+
+export const catSessionProfileHandlerOptions = (options?: Options<CatSessionProfileHandlerData>) => queryOptions<CatSessionProfileHandlerResponse, DefaultError, CatSessionProfileHandlerResponse, ReturnType<typeof catSessionProfileHandlerQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await catSessionProfileHandler({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: catSessionProfileHandlerQueryKey(options)
+});
+
+export const catUpdateProfileHandlerMutation = (options?: Partial<Options<CatUpdateProfileHandlerData>>): UseMutationOptions<CatUpdateProfileHandlerResponse, DefaultError, Options<CatUpdateProfileHandlerData>> => {
+    const mutationOptions: UseMutationOptions<CatUpdateProfileHandlerResponse, DefaultError, Options<CatUpdateProfileHandlerData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await catUpdateProfileHandler({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const catRolesListHandlerQueryKey = (options?: Options<CatRolesListHandlerData>) => createQueryKey('catRolesListHandler', options);
+
+export const catRolesListHandlerOptions = (options?: Options<CatRolesListHandlerData>) => queryOptions<CatRolesListHandlerResponse, DefaultError, CatRolesListHandlerResponse, ReturnType<typeof catRolesListHandlerQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await catRolesListHandler({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: catRolesListHandlerQueryKey(options)
 });
 
 export const sessionGetFromCookieHandlerQueryKey = (options?: Options<SessionGetFromCookieHandlerData>) => createQueryKey('sessionGetFromCookieHandler', options);

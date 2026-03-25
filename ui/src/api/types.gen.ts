@@ -72,6 +72,24 @@ export type CatPhoto = {
     width?: number | null;
 };
 
+export type CatProfileUpdatePayload = {
+    avatarFilename: string;
+    biography: string;
+    birthDate: string;
+    interests: Array<Interest>;
+    photos: Array<CatPhoto>;
+};
+
+export type CatRoleListResponse = {
+    results: Array<Role>;
+    status: Status;
+};
+
+export type GenericResponse = {
+    message?: string | null;
+    status: Status;
+};
+
 export type Interest = {
     id: string;
     name: string;
@@ -116,6 +134,12 @@ export type NewCat = {
     breed_id: string;
     name: string;
     password: string;
+};
+
+export type Role = {
+    id: string;
+    name: string;
+    slug: string;
 };
 
 export enum Status {
@@ -306,6 +330,87 @@ export type MatchSuggestionsHandlerResponses = {
 };
 
 export type MatchSuggestionsHandlerResponse = MatchSuggestionsHandlerResponses[keyof MatchSuggestionsHandlerResponses];
+
+export type CatSessionProfileHandlerData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/profile';
+};
+
+export type CatSessionProfileHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type CatSessionProfileHandlerResponses = {
+    /**
+     * Details for the signed in cat
+     */
+    200: CatDetailResponse;
+};
+
+export type CatSessionProfileHandlerResponse = CatSessionProfileHandlerResponses[keyof CatSessionProfileHandlerResponses];
+
+export type CatUpdateProfileHandlerData = {
+    body: CatProfileUpdatePayload;
+    path?: never;
+    query?: never;
+    url: '/api/v1/profile';
+};
+
+export type CatUpdateProfileHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type CatUpdateProfileHandlerResponses = {
+    /**
+     * Update cat profile
+     */
+    200: GenericResponse;
+};
+
+export type CatUpdateProfileHandlerResponse = CatUpdateProfileHandlerResponses[keyof CatUpdateProfileHandlerResponses];
+
+export type CatRolesListHandlerData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/roles';
+};
+
+export type CatRolesListHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type CatRolesListHandlerResponses = {
+    /**
+     * List of roles for current cat
+     */
+    200: CatRoleListResponse;
+};
+
+export type CatRolesListHandlerResponse = CatRolesListHandlerResponses[keyof CatRolesListHandlerResponses];
 
 export type SessionGetFromCookieHandlerData = {
     body?: never;

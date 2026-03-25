@@ -49,6 +49,14 @@ export const zAuthSignUpResponseResults = z.object({
     session_id: z.string()
 });
 
+export const zCatProfileUpdatePayload = z.object({
+    avatarFilename: z.string(),
+    biography: z.string(),
+    birthDate: z.iso.datetime(),
+    interests: z.array(zInterest),
+    photos: z.array(zCatPhoto)
+});
+
 export const zMatchStatus = z.enum([
     'Pending',
     'Accepted',
@@ -79,6 +87,12 @@ export const zAuthSignUpPayload = z.object({
     cat: zNewCat
 });
 
+export const zRole = z.object({
+    id: z.uuid(),
+    name: z.string(),
+    slug: z.string()
+});
+
 export const zStatus = z.enum(['OK', 'ERROR']);
 
 export const zAuthSignInResponse = z.object({
@@ -100,6 +114,16 @@ export const zBreedsListResponse = z.object({
 export const zCatDetailResponse = z.object({
     message: z.string().nullish(),
     results: zCat.nullish(),
+    status: zStatus
+});
+
+export const zCatRoleListResponse = z.object({
+    results: z.array(zRole),
+    status: zStatus
+});
+
+export const zGenericResponse = z.object({
+    message: z.string().nullish(),
     status: zStatus
 });
 
@@ -196,6 +220,39 @@ export const zMatchSuggestionsHandlerData = z.object({
  * List of match suggestions for a specific cat
  */
 export const zMatchSuggestionsHandlerResponse = zMatchSuggestionsResponse;
+
+export const zCatSessionProfileHandlerData = z.object({
+    body: z.never().optional(),
+    path: z.never().optional(),
+    query: z.never().optional()
+});
+
+/**
+ * Details for the signed in cat
+ */
+export const zCatSessionProfileHandlerResponse = zCatDetailResponse;
+
+export const zCatUpdateProfileHandlerData = z.object({
+    body: zCatProfileUpdatePayload,
+    path: z.never().optional(),
+    query: z.never().optional()
+});
+
+/**
+ * Update cat profile
+ */
+export const zCatUpdateProfileHandlerResponse = zGenericResponse;
+
+export const zCatRolesListHandlerData = z.object({
+    body: z.never().optional(),
+    path: z.never().optional(),
+    query: z.never().optional()
+});
+
+/**
+ * List of roles for current cat
+ */
+export const zCatRolesListHandlerResponse = zCatRoleListResponse;
 
 export const zSessionGetFromCookieHandlerData = z.object({
     body: z.never().optional(),
