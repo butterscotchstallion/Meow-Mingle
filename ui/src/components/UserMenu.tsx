@@ -22,6 +22,11 @@ export function UserMenu() {
       label: cat?.name ?? "My Account",
       items: [
         {
+          label: "Edit Profile",
+          icon: "pi pi-user-edit",
+          command: () => navigate("/profile"),
+        },
+        {
           label: "Sign Out",
           icon: "pi pi-sign-out",
           command: handleSignOut,
