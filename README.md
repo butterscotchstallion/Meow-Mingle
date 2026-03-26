@@ -2,6 +2,12 @@
 
 A cat dating app to find your purrfect match
 
+## Screenshots
+
+### Edit Profile
+
+![Edit Profile](screenshots/edit-profile.png)
+
 ## Tech Stack
 
 - Rust
