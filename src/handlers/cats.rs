@@ -1,5 +1,6 @@
 use crate::handlers::common::{ApiError, GenericResponse};
 use crate::models::cat::get_cat_by_id;
+
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
@@ -97,7 +98,7 @@ pub async fn cat_session_profile_handler(
     ))
 }
 
-const PHOTO_UPLOAD_DIR: &str = "ui/src/public/images/cats";
+const PHOTO_UPLOAD_DIR: &str = "../ui/src/public/images/cats";
 
 #[axum::debug_handler]
 #[utoipa::path(

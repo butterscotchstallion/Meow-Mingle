@@ -10,7 +10,7 @@ import { ProgressSpinner } from "primereact/progressspinner";
 import { UserMenu } from "../components/UserMenu";
 import { catSessionProfileHandler } from "../api/sdk.gen";
 import { useAuthStore } from "../store/authStore";
-import type { Cat } from "../api/types.gen";
+import type { Cat, CatPhoto } from "../api/types.gen";
 
 const MAX_PHOTOS = 6;
 
@@ -32,6 +32,7 @@ export function EditProfile() {
   const [biography, setBiography] = useState("");
   const [avatarFilename, setAvatarFilename] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [existingPhotos, setExistingPhotos] = useState<CatPhoto[]>([]);
   const [newPhotos, setNewPhotos] = useState<PhotoPreview[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,6 +55,7 @@ export function EditProfile() {
         setBiography(cat.biography ?? "");
         setAvatarFilename(cat.avatarFilename ?? "");
         setBirthDate(cat.birthDate ? cat.birthDate.slice(0, 10) : "");
+        setExistingPhotos(cat.photos ?? []);
       } catch {
         setLoadError(
           "An unexpected error occurred while loading your profile.",
@@ -77,7 +79,7 @@ export function EditProfile() {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
 
-    const remaining = MAX_PHOTOS - newPhotos.length;
+    const remaining = MAX_PHOTOS - existingPhotos.length - newPhotos.length;
     const accepted = files.slice(0, remaining);
 
     const previews: PhotoPreview[] = accepted.map((file) => ({
@@ -136,7 +138,10 @@ export function EditProfile() {
         setCat(updatedCat);
       }
 
-      // Clear staged photos after a successful save
+      // Refresh existing photos from the re-fetched profile and clear staged ones
+      if (updatedCat) {
+        setExistingPhotos(updatedCat.photos ?? []);
+      }
       setNewPhotos([]);
       setSaveSuccess(true);
     } catch {
@@ -228,19 +233,32 @@ export function EditProfile() {
                     Photos
                   </span>
                   <span className="text-xs text-purple-500">
-                    {newPhotos.length} / {MAX_PHOTOS}
+                    {existingPhotos.length + newPhotos.length} / {MAX_PHOTOS}
                   </span>
                 </div>
 
-                {/* Preview grid */}
-                {newPhotos.length > 0 && (
+                {/* Combined grid: existing + staged new */}
+                {(existingPhotos.length > 0 || newPhotos.length > 0) && (
                   <div className="grid grid-cols-3 gap-2">
+                    {existingPhotos.map((photo, i) => (
+                      <div
+                        key={photo.id}
+                        className="relative group aspect-square"
+                      >
+                        <img
+                          src={`/images/cats/${photo.filename}`}
+                          alt={photo.altText ?? `Photo ${i + 1}`}
+                          className="w-full h-full object-cover rounded-lg border border-purple-800"
+                        />
+                        <div className="absolute inset-0 rounded-lg bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      </div>
+                    ))}
                     {newPhotos.map((photo, i) => (
                       <div key={i} className="relative group aspect-square">
                         <img
                           src={photo.previewUrl}
-                          alt={`Photo ${i + 1}`}
-                          className="w-full h-full object-cover rounded-lg border border-purple-800"
+                          alt={`New photo ${i + 1}`}
+                          className="w-full h-full object-cover rounded-lg border border-purple-700 border-dashed"
                         />
                         <button
                           type="button"
@@ -250,32 +268,35 @@ export function EditProfile() {
                         >
                           <i className="pi pi-times text-xs" />
                         </button>
+                        {/* "New" badge */}
+                        <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-purple-700 text-purple-100 px-1.5 py-0.5 rounded">
+                          New
+                        </span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Add photos button */}
-                {newPhotos.length < MAX_PHOTOS && (
-                  <>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                    <Button
-                      type="button"
-                      label="Add photos"
-                      icon="pi pi-image"
-                      outlined
-                      className="w-full"
-                      onClick={() => fileInputRef.current?.click()}
-                    />
-                  </>
-                )}
+                {/* Add photos button — always rendered, disabled at limit */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button
+                  type="button"
+                  label="Add photos"
+                  icon="pi pi-image"
+                  outlined
+                  disabled={
+                    existingPhotos.length + newPhotos.length >= MAX_PHOTOS
+                  }
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                />
               </div>
 
               {saveError && (

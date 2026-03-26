@@ -76,3 +76,16 @@ pub async fn populate_photos(
     }
     Ok(())
 }
+
+pub async fn with_photos(
+    pool: &PgPool,
+    cat: Option<crate::models::cat::Cat>,
+) -> Result<Option<crate::models::cat::Cat>, Error> {
+    let mut cat = cat;
+    if let Some(c) = cat.as_mut() {
+        let mut v = vec![std::mem::take(c)];
+        populate_photos(pool, &mut v).await?;
+        *c = v.remove(0);
+    }
+    Ok(cat)
+}

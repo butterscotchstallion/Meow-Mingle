@@ -31,3 +31,4 @@ auth-framework.toml
 app_config.toml
 node_modules
 .zed
+ui/src/public/images/cats/*

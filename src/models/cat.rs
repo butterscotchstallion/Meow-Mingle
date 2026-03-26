@@ -1,5 +1,6 @@
 use crate::models::interests::{Interest, populate_interests, with_interests};
 use crate::models::photos::CatPhoto;
+use crate::models::photos::{populate_photos, with_photos};
 use sqlx::Error;
 use sqlx::types::Uuid;
 use sqlx::types::time::OffsetDateTime;
@@ -107,7 +108,8 @@ pub async fn get_cat_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Option<Cat>,
     .fetch_optional(pool)
     .await?;
 
-    with_interests(pool, row).await
+    let cat = with_interests(pool, row).await?;
+    with_photos(pool, cat).await
 }
 
 pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option<Cat>, Error> {
@@ -136,7 +138,8 @@ pub async fn get_cat_by_name(pool: &sqlx::PgPool, name: String) -> Result<Option
     .fetch_optional(pool)
     .await?;
 
-    with_interests(pool, row).await
+    let cat = with_interests(pool, row).await?;
+    with_photos(pool, cat).await
 }
 
 pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {
@@ -165,6 +168,7 @@ pub async fn get_cats(pool: &sqlx::PgPool) -> Result<Vec<Cat>, Error> {
 
     let mut cats: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
     populate_interests(pool, &mut cats).await?;
+    populate_photos(pool, &mut cats).await?;
 
     Ok(cats)
 }
