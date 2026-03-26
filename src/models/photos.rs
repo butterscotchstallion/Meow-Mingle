@@ -29,6 +29,15 @@ pub struct CatPhotoRow {
     pub alt_text: Option<String>,
 }
 
+pub async fn delete_existing_photos(pool: &PgPool, cat_id: Uuid) -> Result<u64, sqlx::Error> {
+    let rows_affected = sqlx::query(r#"DELETE FROM cats_photos WHERE cat_id = $1"#)
+        .bind(cat_id)
+        .execute(pool)
+        .await?
+        .rows_affected();
+    Ok(rows_affected)
+}
+
 pub async fn get_cat_photos_map(pool: &PgPool) -> Result<HashMap<Uuid, Vec<CatPhoto>>, Error> {
     let rows = sqlx::query_as!(
         CatPhotoRow,

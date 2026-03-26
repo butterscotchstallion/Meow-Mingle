@@ -1,6 +1,7 @@
 use crate::handlers::common::{ApiError, GenericResponse};
 use crate::models::cat::get_cat_by_id;
 
+use crate::models::photos::delete_existing_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
@@ -12,6 +13,7 @@ use sqlx::types::time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
+use tracing::debug;
 use uuid::Uuid;
 
 pub mod routes {
@@ -128,6 +130,15 @@ pub async fn cat_update_profile_handler(
     fs::create_dir_all(PHOTO_UPLOAD_DIR)
         .await
         .map_err(|e| ApiError::internal(e))?;
+
+    // Delete existing photos regardless of how many new ones they upload
+    let photos_deleted = delete_existing_photos(&pool, cat.id)
+        .await
+        .map_err(|e| ApiError::internal(e))?;
+    debug!(
+        "Deleted {} existing photos for cat {}",
+        photos_deleted, cat.id
+    );
 
     while let Some(field) = multipart
         .next_field()
