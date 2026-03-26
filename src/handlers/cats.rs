@@ -131,28 +131,6 @@ pub async fn cat_update_profile_handler(
         .await
         .map_err(|e| ApiError::internal(e))?;
 
-    // Fetch filenames, delete DB rows, then remove files from disk
-    let deleted_filenames = delete_existing_photos(&pool, cat.id)
-        .await
-        .map_err(|e| ApiError::internal(e))?;
-
-    for filename in &deleted_filenames {
-        let path = format!("{}/{}", PHOTO_UPLOAD_DIR, filename);
-        if fs::try_exists(&path).await.unwrap_or(false) {
-            if let Err(e) = fs::remove_file(&path).await {
-                // Log but don't fail the request — the DB rows are already gone
-                debug!("Failed to delete photo file {}: {}", path, e);
-            } else {
-                debug!("Deleted photo file: {}", path);
-            }
-        }
-    }
-    debug!(
-        "Deleted {} existing photos for cat {}",
-        deleted_filenames.len(),
-        cat.id
-    );
-
     while let Some(field) = multipart
         .next_field()
         .await
@@ -250,6 +228,29 @@ pub async fn cat_update_profile_handler(
             }
             _ => {}
         }
+    }
+
+    // Only delete existing photos if new ones were actually uploaded
+    if !uploaded_photo_ids.is_empty() {
+        let deleted_filenames = delete_existing_photos(&pool, cat.id)
+            .await
+            .map_err(|e| ApiError::internal(e))?;
+
+        for filename in &deleted_filenames {
+            let path = format!("{}/{}", PHOTO_UPLOAD_DIR, filename);
+            if fs::try_exists(&path).await.unwrap_or(false) {
+                if let Err(e) = fs::remove_file(&path).await {
+                    debug!("Failed to delete photo file {}: {}", path, e);
+                } else {
+                    debug!("Deleted photo file: {}", path);
+                }
+            }
+        }
+        debug!(
+            "Deleted {} existing photos for cat {}",
+            deleted_filenames.len(),
+            cat.id
+        );
     }
 
     // Update the cat's core profile fields
