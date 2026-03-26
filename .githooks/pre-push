@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🧪 Running coverage report before push..."
+
+# Run llvm-cov and capture the summary output
+COVERAGE_OUTPUT=$(cargo llvm-cov nextest --summary-only 2>&1)
+echo "$COVERAGE_OUTPUT"
+
+# Extract the line coverage percentage from the TOTALS row.
+# llvm-cov summary output looks like:
+#   TOTAL    ... 42.50%  ...
+COV_PCT=$(echo "$COVERAGE_OUTPUT" \
+  | grep -i "^TOTAL" \
+  | grep -oP '\d+\.\d+(?=%)' \
+  | head -1)
+
+if [ -z "$COV_PCT" ]; then
+  echo "⚠️  Could not parse coverage percentage — skipping badge update."
+  exit 0
+fi
+
+echo "📊 Coverage: ${COV_PCT}%"
+
+# Pick a colour based on the coverage value
+COV_INT=$(echo "$COV_PCT" | cut -d. -f1)
+if   [ "$COV_INT" -ge 80 ]; then COLOR="brightgreen"
+elif [ "$COV_INT" -ge 60 ]; then COLOR="yellow"
+elif [ "$COV_INT" -ge 40 ]; then COLOR="orange"
+else                              COLOR="red"
+fi
+
+# Build the shields.io badge URL
+# Format: https://img.shields.io/badge/<label>-<value>-<color>
+BADGE_URL="https://img.shields.io/badge/coverage-${COV_PCT}%25-${COLOR}"
+
+# The markdown snippet we expect to find/replace in README.md.
+# On first run the placeholder line must be present:
+#   ![Coverage](https://img.shields.io/badge/coverage-...)
+BADGE_LINE="![Coverage](${BADGE_URL})"
+
+README="README.md"
+
+if [ ! -f "$README" ]; then
+  echo "⚠️  README.md not found — skipping badge update."
+  exit 0
+fi
+
+# Replace any existing coverage badge line, or append one if absent.
+if grep -q "!\[Coverage\](" "$README"; then
+  # Use a temp file so we don't rely on sed -i behaving the same on all platforms
+  TMP=$(mktemp)
+  sed "s|!\[Coverage\](https://img\.shields\.io/badge/coverage-[^)]*)|${BADGE_LINE}|g" "$README" > "$TMP"
+  mv "$TMP" "$README"
+  echo "✅ Updated coverage badge in README.md"
+else
+  # Append the badge on a new line after the first heading
+  TMP=$(mktemp)
+  awk -v badge="$BADGE_LINE" '
+    /^#/{found++}
+    found==1 && /^#/{print; print ""; print badge; found=2; next}
+    {print}
+  ' "$README" > "$TMP"
+  mv "$TMP" "$README"
+  echo "✅ Inserted coverage badge into README.md"
+fi
+
+# Stage and amend the current commit with the updated README if it changed.
+if ! git diff --quiet "$README"; then
+  git add "$README"
+
+  # If there are staged changes beyond just README (i.e. the user has a real
+  # commit in flight), amend it. Otherwise create a chore commit.
+  if git diff --cached --quiet --diff-filter=d -- "$README"; then
+    echo "ℹ️  No other staged changes — nothing to amend."
+  else
+    echo "📝 Amending commit with updated coverage badge..."
+    git commit --amend --no-edit --no-verify
+  fi
+fi
+
+echo "🚀 Pre-push checks passed."

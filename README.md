@@ -1,6 +1,8 @@
 ## Meow & Mingle
 
-A cat dating app to find your purrfect match
+![Coverage](https://img.shields.io/badge/coverage-0%25-red)
+
+A dating app for cats to find your purrfect match
 
 ## Screenshots
 
