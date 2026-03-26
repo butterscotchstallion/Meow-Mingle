@@ -13,7 +13,7 @@ use utoipa_swagger_ui::SwaggerUi;
 #[openapi(
     info(
         title = "Meow Mingle API",
-        description = "A cat dating app to find your purrfect match",
+        description = "A dating app for cats to find your purrfect match",
         license(name = "MIT", identifier = "MIT"),
         version = "0.1.0"
     ),
@@ -28,7 +28,8 @@ use utoipa_swagger_ui::SwaggerUi;
         crate::handlers::matches::match_add_update_handler,
         crate::handlers::session::session_get_from_cookie_handler,
         crate::handlers::breeds::breeds_list_handler,
-        crate::handlers::rbac::cat_roles_list_handler
+        crate::handlers::rbac::cat_roles_list_handler,
+        crate::handlers::interests::interest_list_handler
     ),
     components(
         schemas(
@@ -43,14 +44,16 @@ use utoipa_swagger_ui::SwaggerUi;
             crate::handlers::auth::AuthSignUpResponse,
             crate::handlers::breeds::Breed,
             crate::handlers::breeds::BreedsListResponse,
-            crate::handlers::rbac::CatRoleListResponse
+            crate::handlers::rbac::CatRoleListResponse,
+            crate::handlers::interests::InterestListResponse
         )
     ),
     tags(
         (name = "cats", description = "Cat endpoints"),
         (name = "matches", description = "Match endpoints"),
         (name = "auth", description = "Auth endpoints"),
-        (name = "rbac", description = "Role Based Access Control endpoints")
+        (name = "rbac", description = "Role Based Access Control endpoints"),
+        (name = "interests", description = "Interests listed on profiles"),
     )
 )]
 pub struct ApiDoc;
@@ -66,6 +69,8 @@ use crate::handlers::breeds::breeds_list_handler;
 use crate::handlers::breeds::routes::BREEDS_LIST;
 pub use crate::handlers::cats;
 use crate::handlers::cats::routes::CAT_SESSION_PROFILE;
+use crate::handlers::interests::interest_list_handler;
+use crate::handlers::interests::routes::INTERESTS_LIST;
 use crate::handlers::matches::routes::{MATCH_ADD, MATCH_SUGGESTIONS, MATCHES_LIST};
 use crate::handlers::matches::{
     match_add_update_handler, match_suggestions_handler, matches_list_handler,
@@ -105,6 +110,7 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(MATCH_ADD, axum::routing::post(match_add_update_handler))
         .route(BREEDS_LIST, get(breeds_list_handler))
         .route(CAT_ROLE_LIST, get(cat_roles_list_handler))
+        .route(INTERESTS_LIST, get(interest_list_handler))
         .with_state(pool)
         .layer(CookieLayer::default())
         .layer(cors);
