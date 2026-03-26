@@ -7,6 +7,7 @@ import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { FloatLabel } from "primereact/floatlabel";
 import { ProgressSpinner } from "primereact/progressspinner";
+import { Dialog } from "primereact/dialog";
 import { UserMenu } from "../components/UserMenu";
 import { catSessionProfileHandler } from "../api/sdk.gen";
 import { useAuthStore } from "../store/authStore";
@@ -17,6 +18,12 @@ const MAX_PHOTOS = 6;
 interface PhotoPreview {
   file: File;
   previewUrl: string;
+}
+
+// A lightbox entry can be either a persisted photo or a staged new one
+interface LightboxItem {
+  src: string;
+  alt: string;
 }
 
 export function EditProfile() {
@@ -30,12 +37,21 @@ export function EditProfile() {
 
   // Form fields
   const [biography, setBiography] = useState("");
-  const [avatarFilename, setAvatarFilename] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [existingPhotos, setExistingPhotos] = useState<CatPhoto[]>([]);
   const [newPhotos, setNewPhotos] = useState<PhotoPreview[]>([]);
 
+  // Avatar picker
+  const [avatarFilename, setAvatarFilename] = useState("");
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Photo uploads
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Lightbox
+  const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -68,36 +84,60 @@ export function EditProfile() {
     fetchProfile();
   }, []);
 
-  // Revoke object URLs on unmount to avoid memory leaks
+  // Revoke blob URLs on unmount
   useEffect(() => {
     return () => {
       newPhotos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
     };
-  }, [newPhotos]);
+  }, [newPhotos, avatarPreviewUrl]);
+
+  // ── Avatar picker ──────────────────────────────────────────────────────────
+
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarFile(file);
+    setAvatarPreviewUrl(URL.createObjectURL(file));
+    setAvatarFilename(file.name);
+    e.target.value = "";
+  }
+
+  function clearAvatar() {
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarFile(null);
+    setAvatarPreviewUrl(null);
+    setAvatarFilename("");
+  }
+
+  // ── Photo grid ─────────────────────────────────────────────────────────────
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-
     const remaining = MAX_PHOTOS - existingPhotos.length - newPhotos.length;
     const accepted = files.slice(0, remaining);
-
     const previews: PhotoPreview[] = accepted.map((file) => ({
       file,
       previewUrl: URL.createObjectURL(file),
     }));
-
     setNewPhotos((prev) => [...prev, ...previews]);
-    // Reset the input so the same file can be re-added after removal
     e.target.value = "";
   }
 
-  function removePhoto(index: number) {
+  function removeExistingPhoto(index: number) {
+    setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function removeNewPhoto(index: number) {
     setNewPhotos((prev) => {
       URL.revokeObjectURL(prev[index].previewUrl);
       return prev.filter((_, i) => i !== index);
     });
   }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -108,11 +148,19 @@ export function EditProfile() {
     try {
       const form = new FormData();
       form.append("biography", biography);
-      form.append("avatar_filename", avatarFilename);
-      // Convert yyyy-MM-dd to a full RFC 3339 timestamp the server can parse
+
+      // If the user picked a new avatar file, upload it as the avatar field;
+      // otherwise send back the existing filename string.
+      if (avatarFile) {
+        form.append("avatar_file", avatarFile, avatarFile.name);
+      } else {
+        form.append("avatar_filename", avatarFilename);
+      }
+
       if (birthDate) {
         form.append("birth_date", new Date(birthDate).toISOString());
       }
+
       for (const photo of newPhotos) {
         form.append("photo", photo.file, photo.file.name);
       }
@@ -130,18 +178,20 @@ export function EditProfile() {
         return;
       }
 
-      // Re-fetch the updated profile and sync it into the auth store
+      // Re-fetch and sync auth store
       const { data: refreshed } = await catSessionProfileHandler();
       const updatedCat = (refreshed as unknown as { results?: Cat } | undefined)
         ?.results;
       if (updatedCat) {
         setCat(updatedCat);
+        setExistingPhotos(updatedCat.photos ?? []);
+        setAvatarFilename(updatedCat.avatarFilename ?? "");
       }
 
-      // Refresh existing photos from the re-fetched profile and clear staged ones
-      if (updatedCat) {
-        setExistingPhotos(updatedCat.photos ?? []);
-      }
+      // Clear staged state
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarFile(null);
+      setAvatarPreviewUrl(null);
       setNewPhotos([]);
       setSaveSuccess(true);
     } catch {
@@ -150,6 +200,17 @@ export function EditProfile() {
       setSaving(false);
     }
   }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  const totalPhotos = existingPhotos.length + newPhotos.length;
+  const atLimit = totalPhotos >= MAX_PHOTOS;
+
+  const existingAvatarUrl = avatarFilename
+    ? `/images/cats/${avatarFilename}`
+    : null;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col min-h-screen bg-[#12071f]">
@@ -163,6 +224,32 @@ export function EditProfile() {
         </Link>
         <UserMenu />
       </header>
+
+      {/* Lightbox */}
+      <Dialog
+        visible={lightbox !== null}
+        onHide={() => setLightbox(null)}
+        dismissableMask
+        closable
+        header={null}
+        pt={{
+          root: {
+            className:
+              "!bg-transparent !shadow-none !border-0 !p-0 !m-0 !max-w-[90vw]",
+          },
+          content: { className: "!bg-transparent !p-0" },
+          mask: { className: "!bg-black/80" },
+        }}
+        style={{ background: "transparent" }}
+      >
+        {lightbox && (
+          <img
+            src={lightbox.src}
+            alt={lightbox.alt}
+            className="max-h-[80vh] max-w-[85vw] object-contain rounded-xl shadow-2xl"
+          />
+        )}
+      </Dialog>
 
       {/* Main */}
       <main className="flex-1 flex flex-col items-center py-10 px-4">
@@ -188,19 +275,79 @@ export function EditProfile() {
 
           {!loading && !loadError && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-              {/* Avatar filename */}
-              <FloatLabel className="w-full">
-                <InputText
-                  id="avatarFilename"
-                  value={avatarFilename}
-                  onChange={(e) => setAvatarFilename(e.target.value)}
-                  className="w-full"
-                  maxLength={255}
-                />
-                <label htmlFor="avatarFilename">Avatar filename</label>
-              </FloatLabel>
+              {/* ── Avatar picker ── */}
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-purple-200">
+                  Avatar
+                </span>
+                <div className="flex items-center gap-4">
+                  {/* Preview circle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const src = avatarPreviewUrl ?? existingAvatarUrl;
+                      if (src) setLightbox({ src, alt: "Avatar" });
+                    }}
+                    className="shrink-0 w-20 h-20 rounded-full overflow-hidden border-2 border-purple-700 bg-purple-950 flex items-center justify-center cursor-pointer hover:border-purple-400 transition-colors focus:outline-none"
+                    aria-label="Preview avatar"
+                    disabled={!avatarPreviewUrl && !existingAvatarUrl}
+                    style={{
+                      cursor:
+                        avatarPreviewUrl || existingAvatarUrl
+                          ? "pointer"
+                          : "default",
+                    }}
+                  >
+                    {avatarPreviewUrl || existingAvatarUrl ? (
+                      <img
+                        src={avatarPreviewUrl ?? existingAvatarUrl!}
+                        alt="Avatar preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <i className="pi pi-user text-2xl text-purple-600" />
+                    )}
+                  </button>
 
-              {/* Birth date */}
+                  <div className="flex flex-col gap-2 flex-1">
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                    <Button
+                      type="button"
+                      label={avatarFilename ? "Change avatar" : "Upload avatar"}
+                      icon="pi pi-upload"
+                      outlined
+                      size="small"
+                      className="w-full"
+                      onClick={() => avatarInputRef.current?.click()}
+                    />
+                    {(avatarPreviewUrl || avatarFilename) && (
+                      <Button
+                        type="button"
+                        label="Remove avatar"
+                        icon="pi pi-trash"
+                        outlined
+                        severity="danger"
+                        size="small"
+                        className="w-full"
+                        onClick={clearAvatar}
+                      />
+                    )}
+                    {avatarFilename && (
+                      <span className="text-xs text-purple-500 truncate">
+                        {avatarFilename}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Birth date ── */}
               <FloatLabel className="w-full">
                 <InputText
                   id="birthDate"
@@ -212,7 +359,7 @@ export function EditProfile() {
                 <label htmlFor="birthDate">Date of birth</label>
               </FloatLabel>
 
-              {/* Biography */}
+              {/* ── Biography ── */}
               <FloatLabel className="w-full">
                 <InputTextarea
                   id="biography"
@@ -226,58 +373,81 @@ export function EditProfile() {
                 <label htmlFor="biography">Biography</label>
               </FloatLabel>
 
-              {/* Photo uploads */}
+              {/* ── Photos ── */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-purple-200">
                     Photos
                   </span>
                   <span className="text-xs text-purple-500">
-                    {existingPhotos.length + newPhotos.length} / {MAX_PHOTOS}
+                    {totalPhotos} / {MAX_PHOTOS}
                   </span>
                 </div>
 
-                {/* Combined grid: existing + staged new */}
+                {/* Combined grid */}
                 {(existingPhotos.length > 0 || newPhotos.length > 0) && (
                   <div className="grid grid-cols-3 gap-2">
-                    {existingPhotos.map((photo, i) => (
-                      <div
-                        key={photo.id}
-                        className="relative group aspect-square"
-                      >
-                        <img
-                          src={`/images/cats/${photo.filename}`}
-                          alt={photo.altText ?? `Photo ${i + 1}`}
-                          className="w-full h-full object-cover rounded-lg border border-purple-800"
-                        />
-                        <div className="absolute inset-0 rounded-lg bg-black/0 group-hover:bg-black/10 transition-colors" />
-                      </div>
-                    ))}
-                    {newPhotos.map((photo, i) => (
-                      <div key={i} className="relative group aspect-square">
-                        <img
-                          src={photo.previewUrl}
-                          alt={`New photo ${i + 1}`}
-                          className="w-full h-full object-cover rounded-lg border border-purple-700 border-dashed"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(i)}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
-                          aria-label={`Remove photo ${i + 1}`}
+                    {/* Persisted photos */}
+                    {existingPhotos.map((photo, i) => {
+                      const src = `/images/cats/${photo.filename}`;
+                      const alt = photo.altText ?? `Photo ${i + 1}`;
+                      return (
+                        <div
+                          key={photo.id}
+                          className="relative group aspect-square"
                         >
-                          <i className="pi pi-times text-xs" />
-                        </button>
-                        {/* "New" badge */}
-                        <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-purple-700 text-purple-100 px-1.5 py-0.5 rounded">
-                          New
-                        </span>
-                      </div>
-                    ))}
+                          <img
+                            src={src}
+                            alt={alt}
+                            onClick={() => setLightbox({ src, alt })}
+                            className="w-full h-full object-cover rounded-lg border border-purple-800 cursor-pointer hover:brightness-90 transition-[filter]"
+                          />
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={() => removeExistingPhoto(i)}
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
+                            aria-label={`Remove photo ${i + 1}`}
+                          >
+                            <i className="pi pi-times text-xs" />
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                    {/* Staged new photos */}
+                    {newPhotos.map((photo, i) => {
+                      const alt = `New photo ${i + 1}`;
+                      return (
+                        <div key={i} className="relative group aspect-square">
+                          <img
+                            src={photo.previewUrl}
+                            alt={alt}
+                            onClick={() =>
+                              setLightbox({ src: photo.previewUrl, alt })
+                            }
+                            className="w-full h-full object-cover rounded-lg border border-dashed border-purple-700 cursor-pointer hover:brightness-90 transition-[filter]"
+                          />
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={() => removeNewPhoto(i)}
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
+                            aria-label={`Remove new photo ${i + 1}`}
+                          >
+                            <i className="pi pi-times text-xs" />
+                          </button>
+                          {/* New badge */}
+                          <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-purple-700 text-purple-100 px-1.5 py-0.5 rounded pointer-events-none">
+                            New
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Add photos button — always rendered, disabled at limit */}
+                {/* Add photos */}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -291,9 +461,7 @@ export function EditProfile() {
                   label="Add photos"
                   icon="pi pi-image"
                   outlined
-                  disabled={
-                    existingPhotos.length + newPhotos.length >= MAX_PHOTOS
-                  }
+                  disabled={atLimit}
                   className="w-full"
                   onClick={() => fileInputRef.current?.click()}
                 />
