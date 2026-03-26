@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Git runs hooks in a non-interactive shell that doesn't source your profile,
+# so ~/.cargo/bin is not on PATH. Source the cargo env file explicitly.
+if [ -f "$HOME/.cargo/env" ]; then
+  # shellcheck source=/dev/null
+  source "$HOME/.cargo/env"
+fi
+
 echo "🧪 Running coverage report before push..."
 
 # Run llvm-cov and capture the summary output
@@ -17,6 +24,8 @@ COV_PCT=$(echo "$COVERAGE_OUTPUT" \
 
 if [ -z "$COV_PCT" ]; then
   echo "⚠️  Could not parse coverage percentage — skipping badge update."
+  echo "    Raw output was:"
+  echo "$COVERAGE_OUTPUT" | tail -10
   exit 0
 fi
 
