@@ -29,13 +29,43 @@ pub struct CatPhotoRow {
     pub alt_text: Option<String>,
 }
 
-pub async fn delete_existing_photos(pool: &PgPool, cat_id: Uuid) -> Result<u64, sqlx::Error> {
-    let rows_affected = sqlx::query(r#"DELETE FROM cats_photos WHERE cat_id = $1"#)
-        .bind(cat_id)
+pub async fn delete_existing_photos(
+    pool: &PgPool,
+    cat_id: Uuid,
+) -> Result<Vec<String>, sqlx::Error> {
+    // Fetch filenames before deleting so the caller can remove the files from disk
+    let rows = sqlx::query!(
+        r#"
+        SELECT p.filename
+        FROM cats_photos cp
+        JOIN photos p ON cp.photo_id = p.id
+        WHERE cp.cat_id = $1
+        "#,
+        cat_id
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let filenames: Vec<String> = rows.into_iter().map(|r| r.filename).collect();
+
+    // Delete the join rows and the photo rows themselves
+    sqlx::query!(
+        r#"
+        DELETE FROM photos
+        WHERE id IN (
+            SELECT photo_id FROM cats_photos WHERE cat_id = $1
+        )
+        "#,
+        cat_id
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query!(r#"DELETE FROM cats_photos WHERE cat_id = $1"#, cat_id)
         .execute(pool)
-        .await?
-        .rows_affected();
-    Ok(rows_affected)
+        .await?;
+
+    Ok(filenames)
 }
 
 pub async fn get_cat_photos_map(pool: &PgPool) -> Result<HashMap<Uuid, Vec<CatPhoto>>, Error> {

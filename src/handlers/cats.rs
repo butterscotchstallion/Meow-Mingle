@@ -123,7 +123,7 @@ pub async fn cat_update_profile_handler(
     };
 
     let mut biography: Option<String> = None;
-    let mut avatar_filename: Option<String> = None;
+    let mut new_avatar_filename: Option<String> = None;
     let mut birth_date: Option<OffsetDateTime> = None;
     let mut uploaded_photo_ids: Vec<Uuid> = Vec::new();
 
@@ -131,13 +131,26 @@ pub async fn cat_update_profile_handler(
         .await
         .map_err(|e| ApiError::internal(e))?;
 
-    // Delete existing photos regardless of how many new ones they upload
-    let photos_deleted = delete_existing_photos(&pool, cat.id)
+    // Fetch filenames, delete DB rows, then remove files from disk
+    let deleted_filenames = delete_existing_photos(&pool, cat.id)
         .await
         .map_err(|e| ApiError::internal(e))?;
+
+    for filename in &deleted_filenames {
+        let path = format!("{}/{}", PHOTO_UPLOAD_DIR, filename);
+        if fs::try_exists(&path).await.unwrap_or(false) {
+            if let Err(e) = fs::remove_file(&path).await {
+                // Log but don't fail the request — the DB rows are already gone
+                debug!("Failed to delete photo file {}: {}", path, e);
+            } else {
+                debug!("Deleted photo file: {}", path);
+            }
+        }
+    }
     debug!(
         "Deleted {} existing photos for cat {}",
-        photos_deleted, cat.id
+        deleted_filenames.len(),
+        cat.id
     );
 
     while let Some(field) = multipart
@@ -151,8 +164,39 @@ pub async fn cat_update_profile_handler(
             "biography" => {
                 biography = Some(field.text().await.map_err(|e| ApiError::internal(e))?);
             }
-            "avatar_filename" => {
-                avatar_filename = Some(field.text().await.map_err(|e| ApiError::internal(e))?);
+            "avatar" => {
+                let original_filename = field.file_name().unwrap_or("upload").to_string();
+                let ext = std::path::Path::new(&original_filename)
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("bin");
+
+                let bytes = field.bytes().await.map_err(|e| ApiError::internal(e))?;
+
+                // Delete the existing avatar file from disk if one exists
+                if let Some(ref existing) = cat.avatar_filename {
+                    let old_path = format!("{}/{}", PHOTO_UPLOAD_DIR, existing);
+                    if fs::try_exists(&old_path).await.unwrap_or(false) {
+                        fs::remove_file(&old_path)
+                            .await
+                            .map_err(|e| ApiError::internal(e))?;
+                        debug!("Deleted old avatar file: {}", old_path);
+                    }
+                }
+
+                // Store as <cat_uuid>.<ext> so it's stable and easy to find
+                let stored_filename = format!("{}.{}", cat.id, ext);
+                let file_path = format!("{}/{}", PHOTO_UPLOAD_DIR, stored_filename);
+
+                let mut file = fs::File::create(&file_path)
+                    .await
+                    .map_err(|e| ApiError::internal(e))?;
+                file.write_all(&bytes)
+                    .await
+                    .map_err(|e| ApiError::internal(e))?;
+
+                debug!("Saved avatar for cat {} to {}", cat.id, file_path);
+                new_avatar_filename = Some(stored_filename);
             }
             "birth_date" => {
                 let raw = field.text().await.map_err(|e| ApiError::internal(e))?;
@@ -220,7 +264,7 @@ pub async fn cat_update_profile_handler(
         "#,
     )
     .bind(biography)
-    .bind(avatar_filename)
+    .bind(new_avatar_filename)
     .bind(birth_date)
     .bind(cat.id)
     .execute(&pool)

@@ -152,7 +152,7 @@ export function EditProfile() {
       // If the user picked a new avatar file, upload it as the avatar field;
       // otherwise send back the existing filename string.
       if (avatarFile) {
-        form.append("avatar_file", avatarFile, avatarFile.name);
+        form.append("avatar", avatarFile, avatarFile.name);
       } else {
         form.append("avatar_filename", avatarFilename);
       }

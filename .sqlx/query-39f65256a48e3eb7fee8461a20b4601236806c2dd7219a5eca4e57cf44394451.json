@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.filename\n        FROM cats_photos cp\n        JOIN photos p ON cp.photo_id = p.id\n        WHERE cp.cat_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "filename",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "39f65256a48e3eb7fee8461a20b4601236806c2dd7219a5eca4e57cf44394451"
+}

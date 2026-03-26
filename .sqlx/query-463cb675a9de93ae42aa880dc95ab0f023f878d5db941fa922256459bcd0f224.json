@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM photos\n        WHERE id IN (\n            SELECT photo_id FROM cats_photos WHERE cat_id = $1\n        )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "463cb675a9de93ae42aa880dc95ab0f023f878d5db941fa922256459bcd0f224"
+}
