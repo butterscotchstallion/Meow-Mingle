@@ -338,11 +338,6 @@ export function EditProfile() {
                         onClick={clearAvatar}
                       />
                     )}
-                    {avatarFilename && (
-                      <span className="text-xs text-purple-500 truncate">
-                        {avatarFilename}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
