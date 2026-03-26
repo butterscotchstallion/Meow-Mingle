@@ -31,13 +31,12 @@ pub async fn test_update_cat_profile() {
     let server = get_server().await;
     let session_id = sign_up_and_get_session_id().await;
     let bio = String::from("Sphinx of The Black Quartz, judge my vow");
-    let avatar_filename = String::from("avatar.jpg");
     let birth_date = OffsetDateTime::now_utc();
     let birth_date_str = birth_date
         .format(&Rfc3339)
         .expect("Failed to format birth_date");
 
-    // Build a small 1x1 white PNG for the photo upload
+    // Build a small 1x1 white PNG — reused for both the avatar and photo uploads
     let png_bytes: Vec<u8> = vec![
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
         0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk length + type
@@ -51,8 +50,13 @@ pub async fn test_update_cat_profile() {
 
     let form = MultipartForm::new()
         .add_text("biography", bio.clone())
-        .add_text("avatar_filename", avatar_filename.clone())
         .add_text("birth_date", birth_date_str)
+        .add_part(
+            "avatar",
+            Part::bytes(png_bytes.clone())
+                .file_name("avatar.png")
+                .mime_type("image/png"),
+        )
         .add_part(
             "photo",
             Part::bytes(png_bytes)
@@ -78,10 +82,21 @@ pub async fn test_update_cat_profile() {
     let cat = get_cat_session_profile_and_verify(session_id.clone()).await;
 
     assert_eq!(cat.biography.as_deref(), Some(bio.as_str()));
-    assert_eq!(
-        cat.avatar_filename.as_deref(),
-        Some(avatar_filename.as_str())
+
+    let avatar = cat
+        .avatar_filename
+        .as_deref()
+        .expect("Expected an avatar_filename, but got None");
+    assert!(
+        !avatar.is_empty(),
+        "Expected a non-empty avatar filename after upload"
     );
+    assert!(
+        avatar.ends_with(".png"),
+        "Expected avatar filename to end with .png, got: {}",
+        avatar
+    );
+
     assert!(
         !cat.photos.is_empty(),
         "Expected at least one uploaded photo"
