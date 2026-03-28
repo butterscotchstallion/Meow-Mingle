@@ -36,23 +36,28 @@ export function EditProfile() {
   const setCat = useAuthStore((s) => s.setCat);
   const cat = useAuthStore((s) => s.cat);
 
+  // Seed text fields immediately from the store — useSessionSync already
+  // populated these on navigation, so no flash or extra fetch needed.
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Form fields
-  const [biography, setBiography] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  // Single unified ordered list of all photos — existing and staged new
+  // Form fields — seeded from the store, not from the fetch
+  const [biography, setBiography] = useState(cat?.biography ?? "");
+  const [birthDate, setBirthDate] = useState(
+    cat?.birthDate ? cat.birthDate.slice(0, 10) : "",
+  );
   const [gridItems, setGridItems] = useState<GridItem[]>([]);
   const [loadingPhotoIds, setLoadingPhotoIds] = useState<Set<string>>(
     new Set(),
   );
 
-  // Avatar picker
-  const [avatarFilename, setAvatarFilename] = useState("");
+  // Avatar picker — seeded from the store
+  const [avatarFilename, setAvatarFilename] = useState(
+    cat?.avatarFilename ?? "",
+  );
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -68,37 +73,43 @@ export function EditProfile() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    async function fetchProfile() {
+    // Only fetch the full profile to get photos — the text fields are already
+    // seeded from the auth store by useSessionSync so we don't need them here.
+    const controller = new AbortController();
+
+    async function fetchPhotos() {
       setLoading(true);
       setLoadError(null);
       try {
-        const { data, error: apiError } = await catSessionProfileHandler();
+        const { data, error: apiError } = await catSessionProfileHandler({
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
         if (apiError || !data) {
           setLoadError("Could not load your profile. Please try again.");
           return;
         }
-        const cat = (data as unknown as { results?: Cat }).results;
-        if (!cat) {
+        const fetched = (data as unknown as { results?: Cat }).results;
+        if (!fetched) {
           setLoadError("No profile found for this session.");
           return;
         }
-        setBiography(cat.biography ?? "");
-        setAvatarFilename(cat.avatarFilename ?? "");
-        setBirthDate(cat.birthDate ? cat.birthDate.slice(0, 10) : "");
-        const sorted = [...(cat.photos ?? [])].sort(
+        const sorted = [...(fetched.photos ?? [])].sort(
           (a, b) => (a.order ?? 0) - (b.order ?? 0),
         );
         setGridItems(sorted.map((photo) => ({ kind: "existing", photo })));
-      } catch {
+      } catch (e) {
+        if (controller.signal.aborted) return;
         setLoadError(
           "An unexpected error occurred while loading your profile.",
         );
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
-    fetchProfile();
+    fetchPhotos();
+    return () => controller.abort();
   }, []);
 
   // Revoke blob URLs on unmount
