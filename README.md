@@ -6,7 +6,7 @@ A dating app for cats to find your purrfect match
 
 ## Screenshots
 
-### Edit Profile
+![View Profile](screenshots/profile.png)
 
 ![Edit Profile](screenshots/edit-profile.png)
 
