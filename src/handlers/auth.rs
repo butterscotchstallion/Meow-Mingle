@@ -9,6 +9,8 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use serde::Serialize;
 use sqlx::PgPool;
+use time::Duration;
+use time::OffsetDateTime;
 
 pub mod routes {
     pub const AUTH_SIGN_IN: &str = "/api/v1/auth/sign-in";
@@ -139,12 +141,18 @@ pub async fn sign_in_handler(
         })?;
 
     let mut headers = HeaderMap::new();
+    let expires = OffsetDateTime::now_utc() + Duration::days(30);
+    let expires_str = expires
+        .format(&time::format_description::well_known::Rfc2822)
+        .unwrap_or_default();
+
     headers.insert(
         SET_COOKIE,
         format!(
-            "{}={}; Path=/; SameSite=None; Secure",
+            "{}={}; Path=/; SameSite=None; Secure; Expires={}",
             crate::models::session::SESSION_COOKIE_NAME,
-            session_id
+            session_id,
+            expires_str
         )
         .parse()
         .unwrap(),
