@@ -27,6 +27,11 @@ interface LightboxItem {
   alt: string;
 }
 
+// Unified grid item — either a persisted photo or a staged new upload
+type GridItem =
+  | { kind: "existing"; photo: CatPhoto }
+  | { kind: "new"; preview: PhotoPreview; key: string };
+
 export function EditProfile() {
   const setCat = useAuthStore((s) => s.setCat);
   const cat = useAuthStore((s) => s.cat);
@@ -40,8 +45,8 @@ export function EditProfile() {
   // Form fields
   const [biography, setBiography] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [existingPhotos, setExistingPhotos] = useState<CatPhoto[]>([]);
-  const [newPhotos, setNewPhotos] = useState<PhotoPreview[]>([]);
+  // Single unified ordered list of all photos — existing and staged new
+  const [gridItems, setGridItems] = useState<GridItem[]>([]);
   const [loadingPhotoIds, setLoadingPhotoIds] = useState<Set<string>>(
     new Set(),
   );
@@ -80,11 +85,10 @@ export function EditProfile() {
         setBiography(cat.biography ?? "");
         setAvatarFilename(cat.avatarFilename ?? "");
         setBirthDate(cat.birthDate ? cat.birthDate.slice(0, 10) : "");
-        // Sort by the order column so the grid reflects the saved order
         const sorted = [...(cat.photos ?? [])].sort(
           (a, b) => (a.order ?? 0) - (b.order ?? 0),
         );
-        setExistingPhotos(sorted);
+        setGridItems(sorted.map((photo) => ({ kind: "existing", photo })));
       } catch {
         setLoadError(
           "An unexpected error occurred while loading your profile.",
@@ -100,10 +104,12 @@ export function EditProfile() {
   // Revoke blob URLs on unmount
   useEffect(() => {
     return () => {
-      newPhotos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+      gridItems.forEach((item) => {
+        if (item.kind === "new") URL.revokeObjectURL(item.preview.previewUrl);
+      });
       if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
     };
-  }, [newPhotos, avatarPreviewUrl]);
+  }, [gridItems, avatarPreviewUrl]);
 
   // ── Avatar picker ──────────────────────────────────────────────────────────
 
@@ -129,18 +135,23 @@ export function EditProfile() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    const remaining = MAX_PHOTOS - existingPhotos.length - newPhotos.length;
+    const remaining = MAX_PHOTOS - gridItems.length;
     const accepted = files.slice(0, remaining);
-    const previews: PhotoPreview[] = accepted.map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
+    const newItems: GridItem[] = accepted.map((file) => ({
+      kind: "new",
+      preview: { file, previewUrl: URL.createObjectURL(file) },
+      key: crypto.randomUUID(),
     }));
-    setNewPhotos((prev) => [...prev, ...previews]);
+    setGridItems((prev) => [...prev, ...newItems]);
     e.target.value = "";
   }
 
-  function removeExistingPhoto(index: number) {
-    setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
+  function removeGridItem(index: number) {
+    setGridItems((prev) => {
+      const item = prev[index];
+      if (item.kind === "new") URL.revokeObjectURL(item.preview.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   // ── Drag-and-drop reorder ──────────────────────────────────────────────────
@@ -163,7 +174,7 @@ export function EditProfile() {
       setDragOverIndex(null);
       return;
     }
-    setExistingPhotos((prev) => {
+    setGridItems((prev) => {
       const next = [...prev];
       const [moved] = next.splice(from, 1);
       next.splice(index, 0, moved);
@@ -177,13 +188,6 @@ export function EditProfile() {
     dragIndexRef.current = null;
     setDragOverIndex(null);
   }, []);
-
-  function removeNewPhoto(index: number) {
-    setNewPhotos((prev) => {
-      URL.revokeObjectURL(prev[index].previewUrl);
-      return prev.filter((_, i) => i !== index);
-    });
-  }
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
@@ -209,18 +213,28 @@ export function EditProfile() {
         form.append("birth_date", new Date(birthDate).toISOString());
       }
 
-      for (const photo of newPhotos) {
-        form.append("photo", photo.file, photo.file.name);
+      // Split unified grid back into existing and new for the API.
+      // New photo files must be appended in grid order so the backend
+      // assigns their order correctly relative to existing photos.
+      const keptPhotoIds: string[] = [];
+      const photoOrder: { id: string; order: number }[] = [];
+      let newPhotoGridIndex = 0;
+
+      // First pass: collect kept IDs and their final order positions,
+      // and append new photo files in the order they appear in the grid.
+      for (let i = 0; i < gridItems.length; i++) {
+        const item = gridItems[i];
+        if (item.kind === "existing") {
+          keptPhotoIds.push(item.photo.id);
+          photoOrder.push({ id: item.photo.id, order: i });
+        } else {
+          // Append new files — the backend will assign order after insertion
+          form.append("photo", item.preview.file, item.preview.file.name);
+          newPhotoGridIndex++;
+        }
       }
 
-      // Tell the backend which existing photos to keep — anything not in this
-      // list will be deleted from the DB and disk
-      const keptPhotoIds = existingPhotos.map((p) => p.id);
       form.append("kept_photo_ids", JSON.stringify(keptPhotoIds));
-
-      // Send the current display order of existing photos so the backend
-      // can persist it to the photos.order column
-      const photoOrder = existingPhotos.map((p, i) => ({ id: p.id, order: i }));
       form.append("photo_order", JSON.stringify(photoOrder));
 
       const res = await fetch("/api/v1/profile", {
@@ -242,15 +256,17 @@ export function EditProfile() {
         ?.results;
       if (updatedCat) {
         setCat(updatedCat);
-        setExistingPhotos(updatedCat.photos ?? []);
+        const sorted = [...(updatedCat.photos ?? [])].sort(
+          (a, b) => (a.order ?? 0) - (b.order ?? 0),
+        );
+        setGridItems(sorted.map((photo) => ({ kind: "existing", photo })));
         setAvatarFilename(updatedCat.avatarFilename ?? "");
       }
 
-      // Clear staged state
+      // Clear staged avatar state
       if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
       setAvatarFile(null);
       setAvatarPreviewUrl(null);
-      setNewPhotos([]);
       setSaveSuccess(true);
     } catch {
       setSaveError("An unexpected error occurred while saving.");
@@ -261,7 +277,7 @@ export function EditProfile() {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  const totalPhotos = existingPhotos.length + newPhotos.length;
+  const totalPhotos = gridItems.length;
   const atLimit = totalPhotos >= MAX_PHOTOS;
 
   const existingAvatarUrl = avatarFilename
@@ -485,7 +501,7 @@ export function EditProfile() {
                   </span>
                   <span className="text-xs text-purple-500">
                     {totalPhotos} / {MAX_PHOTOS}
-                    {existingPhotos.length > 1 && (
+                    {totalPhotos > 1 && (
                       <span className="ml-2 text-purple-600">
                         · drag to reorder
                       </span>
@@ -493,18 +509,25 @@ export function EditProfile() {
                   </span>
                 </div>
 
-                {/* Combined grid */}
-                {(existingPhotos.length > 0 || newPhotos.length > 0) && (
+                {/* Unified draggable grid */}
+                {gridItems.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
-                    {/* Persisted photos — draggable to reorder */}
-                    {existingPhotos.map((photo, i) => {
-                      const src = `/images/cats/${photo.filename}`;
-                      const alt = photo.altText ?? `Photo ${i + 1}`;
+                    {gridItems.map((item, i) => {
                       const isDragOver = dragOverIndex === i;
-                      const isPhotoLoading = loadingPhotoIds.has(photo.id);
+                      const isExisting = item.kind === "existing";
+                      const src = isExisting
+                        ? `/images/cats/${item.photo.filename}`
+                        : item.preview.previewUrl;
+                      const alt = isExisting
+                        ? (item.photo.altText ?? `Photo ${i + 1}`)
+                        : `New photo ${i + 1}`;
+                      const itemKey = isExisting ? item.photo.id : item.key;
+                      const isPhotoLoading =
+                        isExisting && loadingPhotoIds.has(item.photo.id);
+
                       return (
                         <div
-                          key={photo.id}
+                          key={itemKey}
                           className={`relative group aspect-square transition-transform ${
                             isDragOver
                               ? "scale-105 ring-2 ring-purple-400 rounded-lg"
@@ -516,7 +539,7 @@ export function EditProfile() {
                           onDrop={() => handleDrop(i)}
                           onDragEnd={handleDragEnd}
                         >
-                          {/* Skeleton shown while image loads */}
+                          {/* Skeleton shown while existing image loads */}
                           {isPhotoLoading && (
                             <Skeleton
                               className="absolute inset-0 rounded-lg"
@@ -529,28 +552,33 @@ export function EditProfile() {
                             onClick={() =>
                               !isPhotoLoading && setLightbox({ src, alt })
                             }
-                            onLoadStart={() =>
-                              setLoadingPhotoIds((prev) =>
-                                new Set(prev).add(photo.id),
-                              )
-                            }
-                            onLoad={() =>
-                              setLoadingPhotoIds((prev) => {
-                                const next = new Set(prev);
-                                next.delete(photo.id);
-                                return next;
-                              })
-                            }
-                            onError={() =>
-                              setLoadingPhotoIds((prev) => {
-                                const next = new Set(prev);
-                                next.delete(photo.id);
-                                return next;
-                              })
-                            }
-                            className={`w-full h-full object-cover rounded-lg border border-purple-800 cursor-grab active:cursor-grabbing hover:brightness-90 transition-[filter,opacity] ${
-                              isPhotoLoading ? "opacity-0" : "opacity-100"
-                            }`}
+                            onLoadStart={() => {
+                              if (isExisting)
+                                setLoadingPhotoIds((prev) =>
+                                  new Set(prev).add(item.photo.id),
+                                );
+                            }}
+                            onLoad={() => {
+                              if (isExisting)
+                                setLoadingPhotoIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(item.photo.id);
+                                  return next;
+                                });
+                            }}
+                            onError={() => {
+                              if (isExisting)
+                                setLoadingPhotoIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(item.photo.id);
+                                  return next;
+                                });
+                            }}
+                            className={`w-full h-full object-cover rounded-lg border cursor-grab active:cursor-grabbing hover:brightness-90 transition-[filter,opacity] ${
+                              isExisting
+                                ? "border-purple-800"
+                                : "border-dashed border-purple-700"
+                            } ${isPhotoLoading ? "opacity-0" : "opacity-100"}`}
                             draggable={false}
                           />
                           {/* Drag handle hint */}
@@ -561,45 +589,21 @@ export function EditProfile() {
                           <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-black/50 text-white px-1.5 py-0.5 rounded pointer-events-none">
                             {i + 1}
                           </span>
+                          {/* New badge for staged uploads */}
+                          {!isExisting && (
+                            <span className="absolute top-1 left-1 text-[10px] font-semibold bg-purple-700 text-purple-100 px-1.5 py-0.5 rounded pointer-events-none">
+                              New
+                            </span>
+                          )}
                           {/* Remove button */}
                           <button
                             type="button"
-                            onClick={() => removeExistingPhoto(i)}
+                            onClick={() => removeGridItem(i)}
                             className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
                             aria-label={`Remove photo ${i + 1}`}
                           >
                             <i className="pi pi-times text-xs" />
                           </button>
-                        </div>
-                      );
-                    })}
-
-                    {/* Staged new photos */}
-                    {newPhotos.map((photo, i) => {
-                      const alt = `New photo ${i + 1}`;
-                      return (
-                        <div key={i} className="relative group aspect-square">
-                          <img
-                            src={photo.previewUrl}
-                            alt={alt}
-                            onClick={() =>
-                              setLightbox({ src: photo.previewUrl, alt })
-                            }
-                            className="w-full h-full object-cover rounded-lg border border-dashed border-purple-700 cursor-pointer hover:brightness-90 transition-[filter]"
-                          />
-                          {/* Remove button */}
-                          <button
-                            type="button"
-                            onClick={() => removeNewPhoto(i)}
-                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
-                            aria-label={`Remove new photo ${i + 1}`}
-                          >
-                            <i className="pi pi-times text-xs" />
-                          </button>
-                          {/* New badge */}
-                          <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-purple-700 text-purple-100 px-1.5 py-0.5 rounded pointer-events-none">
-                            New
-                          </span>
                         </div>
                       );
                     })}
