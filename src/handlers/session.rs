@@ -28,10 +28,6 @@ pub async fn session_get_from_cookie_handler(
     State(pool): State<PgPool>,
     cookie_manager: CookieManager,
 ) -> Result<(StatusCode, Json<CatDetailResponse>), ApiError> {
-    // let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
-    //     Ok(Some(cat)) => cat,
-    //     _ => return Err(ApiError::not_found()),
-    // };
     let session_id = get_session_id_from_cookie(cookie_manager);
     let row = sqlx::query_as!(
         CatRow,
