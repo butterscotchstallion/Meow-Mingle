@@ -1,8 +1,8 @@
 use crate::handlers::common::ApiError;
 use crate::models::status::Status;
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::Json;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -45,7 +45,7 @@ pub async fn breeds_list_handler(
     )
     .fetch_all(&pool)
     .await
-    .map_err(|e| ApiError::internal(e))?;
+    .map_err(ApiError::internal)?;
 
     Ok((
         StatusCode::OK,

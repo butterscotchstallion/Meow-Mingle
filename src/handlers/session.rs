@@ -4,9 +4,9 @@ use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
 use crate::models::session::get_session_id_from_cookie;
 use crate::models::status::Status;
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::Json;
 use axum_cookie::CookieManager;
 use sqlx::{Error, PgPool};
 
@@ -67,7 +67,7 @@ pub async fn session_get_from_cookie_handler(
         let mut v = vec![std::mem::take(c)];
         populate_interests(&pool, &mut v)
             .await
-            .map_err(|e| ApiError::internal(e))?;
+            .map_err(ApiError::internal)?;
         *c = v.remove(0);
     }
 

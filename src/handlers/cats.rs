@@ -4,12 +4,12 @@ use crate::models::cat::get_cat_by_id;
 use crate::models::photos::delete_existing_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
-use axum::Json;
 use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
+use axum::Json;
 use axum_cookie::CookieManager;
-use sqlx::PgPool;
 use sqlx::types::time::OffsetDateTime;
+use sqlx::PgPool;
 use time::format_description::well_known::Rfc3339;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
@@ -88,7 +88,7 @@ pub async fn cat_session_profile_handler(
 
     let cat = get_cat_by_id(&pool, cat.id)
         .await
-        .map_err(|e| ApiError::internal(e))?;
+        .map_err(ApiError::internal)?;
 
     Ok((
         StatusCode::OK,
@@ -129,13 +129,9 @@ pub async fn cat_update_profile_handler(
 
     fs::create_dir_all(PHOTO_UPLOAD_DIR)
         .await
-        .map_err(|e| ApiError::internal(e))?;
+        .map_err(ApiError::internal)?;
 
-    while let Some(field) = multipart
-        .next_field()
-        .await
-        .map_err(|e| ApiError::internal(e))?
-    {
+    while let Some(field) = multipart.next_field().await.map_err(ApiError::internal)? {
         let name = field.name().unwrap_or("").to_string();
 
         match name.as_str() {
@@ -168,10 +164,8 @@ pub async fn cat_update_profile_handler(
 
                 let mut file = fs::File::create(&file_path)
                     .await
-                    .map_err(|e| ApiError::internal(e))?;
-                file.write_all(&bytes)
-                    .await
-                    .map_err(|e| ApiError::internal(e))?;
+                    .map_err(ApiError::internal)?;
+                file.write_all(&bytes).await.map_err(ApiError::internal)?;
 
                 debug!("Saved avatar for cat {} to {}", cat.id, file_path);
                 new_avatar_filename = Some(stored_filename);
@@ -201,7 +195,7 @@ pub async fn cat_update_profile_handler(
                 )
                 .fetch_one(&pool)
                 .await
-                .map_err(|e| ApiError::internal(e))?;
+                .map_err(ApiError::internal)?;
 
                 let photo_id = row.id;
                 let stored_filename = format!("{}.{}", photo_id, ext);
@@ -209,10 +203,8 @@ pub async fn cat_update_profile_handler(
 
                 let mut file = fs::File::create(&file_path)
                     .await
-                    .map_err(|e| ApiError::internal(e))?;
-                file.write_all(&bytes)
-                    .await
-                    .map_err(|e| ApiError::internal(e))?;
+                    .map_err(ApiError::internal)?;
+                file.write_all(&bytes).await.map_err(ApiError::internal)?;
 
                 // Update the row with the real filename now that we have it
                 sqlx::query!(
@@ -222,7 +214,7 @@ pub async fn cat_update_profile_handler(
                 )
                 .execute(&pool)
                 .await
-                .map_err(|e| ApiError::internal(e))?;
+                .map_err(ApiError::internal)?;
 
                 uploaded_photo_ids.push(photo_id);
             }
@@ -234,7 +226,7 @@ pub async fn cat_update_profile_handler(
     if !uploaded_photo_ids.is_empty() {
         let deleted_filenames = delete_existing_photos(&pool, cat.id)
             .await
-            .map_err(|e| ApiError::internal(e))?;
+            .map_err(ApiError::internal)?;
 
         for filename in &deleted_filenames {
             let path = format!("{}/{}", PHOTO_UPLOAD_DIR, filename);
@@ -279,7 +271,7 @@ pub async fn cat_update_profile_handler(
             .bind(photo_id)
             .execute(&pool)
             .await
-            .map_err(|e| ApiError::internal(e))?;
+            .map_err(ApiError::internal)?;
     }
 
     Ok((

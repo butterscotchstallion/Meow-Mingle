@@ -1,8 +1,8 @@
 use crate::handlers::common::ApiError;
 use crate::models::{interests::Interest, status::Status};
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::Json;
 use sqlx::PgPool;
 
 pub mod routes {
@@ -38,7 +38,7 @@ pub async fn interest_list_handler(
     )
     .fetch_all(&pool)
     .await
-    .map_err(|e| ApiError::internal(e))?;
+    .map_err(ApiError::internal)?;
 
     Ok((
         StatusCode::OK,

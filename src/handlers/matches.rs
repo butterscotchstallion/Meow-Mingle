@@ -4,12 +4,12 @@ use crate::models::interests::populate_interests;
 use crate::models::photos::populate_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
-use axum::Json;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
+use axum::Json;
 
 use axum_cookie::CookieManager;
-use serde_with::{StringWithSeparator, formats::CommaSeparator, serde_as};
+use serde_with::{formats::CommaSeparator, serde_as, StringWithSeparator};
 use sqlx::{PgPool, Postgres, QueryBuilder};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -221,10 +221,10 @@ pub async fn match_suggestions_handler(
     let mut suggestions: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
     populate_interests(&pool, &mut suggestions)
         .await
-        .map_err(|e| ApiError::internal(e))?;
+        .map_err(ApiError::internal)?;
     populate_photos(&pool, &mut suggestions)
         .await
-        .map_err(|e| ApiError::internal(e))?;
+        .map_err(ApiError::internal)?;
 
     Ok((
         StatusCode::OK,
@@ -270,7 +270,7 @@ pub async fn match_add_update_handler(
     .bind(match_request.status)
     .execute(&pool)
     .await
-    .map_err(|e| ApiError::internal(e))?;
+    .map_err(ApiError::internal)?;
 
     Ok((
         StatusCode::CREATED,

@@ -2,9 +2,9 @@ use crate::handlers::common::ApiError;
 use crate::models::rbac::Role;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::Json;
 use axum_cookie::CookieManager;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -50,7 +50,7 @@ pub async fn cat_roles_list_handler(
     )
     .fetch_all(&pool)
     .await
-    .map_err(|e| ApiError::internal(e))?;
+    .map_err(ApiError::internal)?;
 
     Ok((
         StatusCode::OK,
