@@ -1,9 +1,9 @@
+use crate::AppState;
 use crate::handlers::common::ApiError;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
-use sqlx::PgPool;
 use uuid::Uuid;
 
 pub mod routes {
@@ -33,7 +33,7 @@ pub struct BreedsListResponse {
     tag = "breeds"
 )]
 pub async fn breeds_list_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<BreedsListResponse>), ApiError> {
     let breeds = sqlx::query_as!(
         Breed,
@@ -43,7 +43,7 @@ pub async fn breeds_list_handler(
         ORDER BY name ASC
         "#
     )
-    .fetch_all(&pool)
+    .fetch_all(&state.pool)
     .await
     .map_err(ApiError::internal)?;
 

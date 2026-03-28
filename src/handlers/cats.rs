@@ -1,15 +1,15 @@
+use crate::AppState;
 use crate::handlers::common::{ApiError, GenericResponse};
 use crate::models::cat::get_cat_by_id;
 use serde_json;
 
-use crate::models::photos::delete_existing_photos;
+use crate::models::photos::delete_removed_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
 use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
 use axum_cookie::CookieManager;
-use sqlx::PgPool;
 use sqlx::types::time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::fs;
@@ -43,18 +43,18 @@ pub struct CatDetailResponse {
     )
 )]
 pub async fn cat_detail_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
     cookie_manager: CookieManager,
 ) -> Result<(StatusCode, Json<CatDetailResponse>), ApiError> {
-    match get_cat_from_session_id(&pool, cookie_manager).await {
+    match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(_)) => {}
         _ => return Err(ApiError::unauthorized()),
     };
 
     tracing::info!("Getting cat detail for {}", id);
 
-    let cat = get_cat_by_id(&pool, id)
+    let cat = get_cat_by_id(&state.pool, id)
         .await
         .map_err(|e| ApiError::internal(e))?;
 
@@ -79,15 +79,15 @@ pub async fn cat_detail_handler(
     )
 )]
 pub async fn cat_session_profile_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     cookie_manager: CookieManager,
 ) -> Result<(StatusCode, Json<CatDetailResponse>), ApiError> {
-    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+    let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
 
-    let cat = get_cat_by_id(&pool, cat.id)
+    let cat = get_cat_by_id(&state.pool, cat.id)
         .await
         .map_err(ApiError::internal)?;
 
@@ -101,8 +101,6 @@ pub async fn cat_session_profile_handler(
     ))
 }
 
-const PHOTO_UPLOAD_DIR: &str = "../ui/src/public/images/cats";
-
 #[axum::debug_handler]
 #[utoipa::path(
     put,
@@ -114,14 +112,15 @@ const PHOTO_UPLOAD_DIR: &str = "../ui/src/public/images/cats";
     )
 )]
 pub async fn cat_update_profile_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     cookie_manager: CookieManager,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<GenericResponse>), ApiError> {
-    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+    let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
+    let photo_upload_dir = &state.config.photo_upload_dir;
 
     let mut biography: Option<String> = None;
     let mut new_avatar_filename: Option<String> = None;
@@ -129,8 +128,10 @@ pub async fn cat_update_profile_handler(
     let mut uploaded_photo_ids: Vec<Uuid> = Vec::new();
     // JSON array of {id: Uuid, order: i32} sent by the client after a drag-reorder
     let mut photo_order: Vec<(Uuid, i32)> = Vec::new();
+    // IDs of existing photos the user chose to keep — anything not in this list gets deleted
+    let mut kept_photo_ids: Vec<Uuid> = Vec::new();
 
-    fs::create_dir_all(PHOTO_UPLOAD_DIR)
+    fs::create_dir_all(photo_upload_dir)
         .await
         .map_err(ApiError::internal)?;
 
@@ -152,7 +153,7 @@ pub async fn cat_update_profile_handler(
 
                 // Delete the existing avatar file from disk if one exists
                 if let Some(ref existing) = cat.avatar_filename {
-                    let old_path = format!("{}/{}", PHOTO_UPLOAD_DIR, existing);
+                    let old_path = format!("{}/{}", photo_upload_dir, existing);
                     if fs::try_exists(&old_path).await.unwrap_or(false) {
                         fs::remove_file(&old_path)
                             .await
@@ -163,7 +164,7 @@ pub async fn cat_update_profile_handler(
 
                 // Store as <cat_uuid>.<ext> so it's stable and easy to find
                 let stored_filename = format!("{}.{}", cat.id, ext);
-                let file_path = format!("{}/{}", PHOTO_UPLOAD_DIR, stored_filename);
+                let file_path = format!("{}/{}", photo_upload_dir, stored_filename);
 
                 let mut file = fs::File::create(&file_path)
                     .await
@@ -195,13 +196,13 @@ pub async fn cat_update_profile_handler(
                     r#"INSERT INTO photos (filename) VALUES ($1) RETURNING id"#,
                     placeholder
                 )
-                .fetch_one(&pool)
+                .fetch_one(&state.pool)
                 .await
                 .map_err(ApiError::internal)?;
 
                 let photo_id = row.id;
                 let stored_filename = format!("{}.{}", photo_id, ext);
-                let file_path = format!("{}/{}", PHOTO_UPLOAD_DIR, stored_filename);
+                let file_path = format!("{}/{}", photo_upload_dir, stored_filename);
 
                 let mut file = fs::File::create(&file_path)
                     .await
@@ -214,11 +215,23 @@ pub async fn cat_update_profile_handler(
                     stored_filename,
                     photo_id
                 )
-                .execute(&pool)
+                .execute(&state.pool)
                 .await
                 .map_err(ApiError::internal)?;
 
                 uploaded_photo_ids.push(photo_id);
+            }
+            "kept_photo_ids" => {
+                let raw = field.text().await.map_err(ApiError::internal)?;
+                debug!("kept_photo_ids raw: {}", raw);
+                let parsed: Vec<serde_json::Value> =
+                    serde_json::from_str(&raw).map_err(ApiError::internal)?;
+                for entry in &parsed {
+                    if let Some(id) = entry.as_str().and_then(|s| Uuid::parse_str(s).ok()) {
+                        kept_photo_ids.push(id);
+                    }
+                }
+                debug!("kept_photo_ids parsed {} entries", kept_photo_ids.len());
             }
             "photo_order" => {
                 let raw = field.text().await.map_err(ApiError::internal)?;
@@ -240,28 +253,27 @@ pub async fn cat_update_profile_handler(
         }
     }
 
-    // Only delete existing photos if new ones were actually uploaded
-    if !uploaded_photo_ids.is_empty() {
-        let deleted_filenames = delete_existing_photos(&pool, cat.id)
-            .await
-            .map_err(ApiError::internal)?;
+    // Delete photos that are not in kept_photo_ids (includes newly uploaded ones
+    // which aren't in kept_photo_ids yet — they get linked below)
+    let deleted_filenames = delete_removed_photos(&state.pool, cat.id, &kept_photo_ids)
+        .await
+        .map_err(ApiError::internal)?;
 
-        for filename in &deleted_filenames {
-            let path = format!("{}/{}", PHOTO_UPLOAD_DIR, filename);
-            if fs::try_exists(&path).await.unwrap_or(false) {
-                if let Err(e) = fs::remove_file(&path).await {
-                    debug!("Failed to delete photo file {}: {}", path, e);
-                } else {
-                    debug!("Deleted photo file: {}", path);
-                }
+    for filename in &deleted_filenames {
+        let path = format!("{}/{}", photo_upload_dir, filename);
+        if fs::try_exists(&path).await.unwrap_or(false) {
+            if let Err(e) = fs::remove_file(&path).await {
+                debug!("Failed to delete photo file {}: {}", path, e);
+            } else {
+                debug!("Deleted photo file: {}", path);
             }
         }
-        debug!(
-            "Deleted {} existing photos for cat {}",
-            deleted_filenames.len(),
-            cat.id
-        );
     }
+    debug!(
+        "Deleted {} removed photos for cat {}",
+        deleted_filenames.len(),
+        cat.id
+    );
 
     // Update the cat's core profile fields
     sqlx::query(
@@ -278,7 +290,7 @@ pub async fn cat_update_profile_handler(
     .bind(new_avatar_filename)
     .bind(birth_date)
     .bind(cat.id)
-    .execute(&pool)
+    .execute(&state.pool)
     .await
     .map_err(|e: sqlx::Error| ApiError::internal(e))?;
 
@@ -287,7 +299,7 @@ pub async fn cat_update_profile_handler(
         r#"SELECT COUNT(*) FROM cats_photos WHERE cat_id = $1"#,
         cat.id
     )
-    .fetch_one(&pool)
+    .fetch_one(&state.pool)
     .await
     .map_err(ApiError::internal)?
     .unwrap_or(0) as i32;
@@ -297,7 +309,7 @@ pub async fn cat_update_profile_handler(
         sqlx::query(r#"INSERT INTO cats_photos (cat_id, photo_id) VALUES ($1, $2)"#)
             .bind(cat.id)
             .bind(photo_id)
-            .execute(&pool)
+            .execute(&state.pool)
             .await
             .map_err(ApiError::internal)?;
 
@@ -306,14 +318,12 @@ pub async fn cat_update_profile_handler(
             order,
             photo_id
         )
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .map_err(ApiError::internal)?;
     }
 
-    // Apply photo ordering last, after any deletions and insertions, so the
-    // updates aren't wiped by delete_existing_photos and new photo rows exist
-    // before we try to update them.
+    // Apply photo ordering last
     debug!("Applying order for {} photos", photo_order.len());
     for (photo_id, order) in &photo_order {
         debug!("Setting order={} for photo_id={}", order, photo_id);
@@ -322,7 +332,7 @@ pub async fn cat_update_profile_handler(
             order,
             photo_id
         )
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .map_err(ApiError::internal)?
         .rows_affected();

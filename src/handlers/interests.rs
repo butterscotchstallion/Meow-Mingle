@@ -1,9 +1,9 @@
+use crate::AppState;
 use crate::handlers::common::ApiError;
 use crate::models::{interests::Interest, status::Status};
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
-use sqlx::PgPool;
 
 pub mod routes {
     pub const INTERESTS_LIST: &str = "/api/v1/interests";
@@ -26,7 +26,7 @@ pub struct InterestListResponse {
     tag = "interests"
 )]
 pub async fn interest_list_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<InterestListResponse>), ApiError> {
     let interests = sqlx::query_as!(
         Interest,
@@ -36,7 +36,7 @@ pub async fn interest_list_handler(
         ORDER BY name ASC
         "#
     )
-    .fetch_all(&pool)
+    .fetch_all(&state.pool)
     .await
     .map_err(ApiError::internal)?;
 

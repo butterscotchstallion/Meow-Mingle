@@ -1,3 +1,5 @@
+photo_upload_dir = "ui/src/public/images/cats"
+
 [testUsers]
 adminUsername = "admin-user"
 adminPassword = "admin-user-password"

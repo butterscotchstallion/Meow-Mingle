@@ -1,3 +1,4 @@
+use crate::AppState;
 use crate::hasher;
 use crate::models::cat::{Cat, NewCat, get_cat_by_name, update_last_seen};
 use crate::models::session::get_or_generate_session_id;
@@ -8,7 +9,6 @@ use axum::http::header::SET_COOKIE;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use serde::Serialize;
-use sqlx::PgPool;
 
 pub mod routes {
     pub const AUTH_SIGN_IN: &str = "/api/v1/auth/sign-in";
@@ -69,7 +69,7 @@ pub struct AuthSignUpResponse {
     )
 )]
 pub async fn sign_in_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(payload): Json<AuthSignInPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthSignInResponse>)> {
     let invalid_credentials = || {
@@ -86,15 +86,17 @@ pub async fn sign_in_handler(
         ))
     };
 
-    let cat_result = get_cat_by_name(&pool, payload.name).await.map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(AuthSignInResponse {
-                status: Status::Error,
-                message: e.to_string(),
-            }),
-        )
-    })?;
+    let cat_result = get_cat_by_name(&state.pool, payload.name)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(AuthSignInResponse {
+                    status: Status::Error,
+                    message: e.to_string(),
+                }),
+            )
+        })?;
 
     let cat_row = match cat_result {
         Some(r) => r,
@@ -116,17 +118,19 @@ pub async fn sign_in_handler(
         return invalid_credentials();
     }
 
-    update_last_seen(&pool, cat_row.id).await.map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(AuthSignInResponse {
-                status: Status::Error,
-                message: e.to_string(),
-            }),
-        )
-    })?;
+    update_last_seen(&state.pool, cat_row.id)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(AuthSignInResponse {
+                    status: Status::Error,
+                    message: e.to_string(),
+                }),
+            )
+        })?;
 
-    let session_id = get_or_generate_session_id(&pool, cat_row.id)
+    let session_id = get_or_generate_session_id(&state.pool, cat_row.id)
         .await
         .map_err(|e| {
             (
@@ -181,7 +185,7 @@ pub async fn sign_in_handler(
     )
 )]
 pub async fn sign_up_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(payload): Json<AuthSignUpPayload>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthSignUpResponse>)> {
     let hashed_password = hasher::hash_password(&payload.cat.password).map_err(|e| {
@@ -202,7 +206,7 @@ pub async fn sign_up_handler(
         breed_id: payload.cat.breed_id,
     };
 
-    let cat = crate::models::cat::add_cat(&pool, cat_from_payload)
+    let cat = crate::models::cat::add_cat(&state.pool, cat_from_payload)
         .await
         .map_err(|e| {
             (
@@ -215,7 +219,7 @@ pub async fn sign_up_handler(
             )
         })?;
 
-    let session_id = get_or_generate_session_id(&pool, cat.id)
+    let session_id = get_or_generate_session_id(&state.pool, cat.id)
         .await
         .map_err(|e| {
             (

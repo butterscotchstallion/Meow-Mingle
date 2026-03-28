@@ -1,13 +1,13 @@
+use crate::AppState;
 use crate::handlers::common::ApiError;
 use crate::models::rbac::Role;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
 use axum_cookie::CookieManager;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 
 pub mod routes {
     pub const CAT_ROLE_LIST: &str = "/api/v1/roles";
@@ -30,10 +30,10 @@ pub struct CatRoleListResponse {
     tag = "roles"
 )]
 pub async fn cat_roles_list_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     cookie_manager: CookieManager,
 ) -> Result<(StatusCode, Json<CatRoleListResponse>), ApiError> {
-    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+    let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
@@ -48,7 +48,7 @@ pub async fn cat_roles_list_handler(
         "#,
         cat.id
     )
-    .fetch_all(&pool)
+    .fetch_all(&state.pool)
     .await
     .map_err(ApiError::internal)?;
 

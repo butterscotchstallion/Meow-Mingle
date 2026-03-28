@@ -1,3 +1,4 @@
+use crate::config::AppConfig;
 use axum::Router;
 use axum::http::{HeaderName, HeaderValue, Method};
 use axum::routing::{get, put};
@@ -6,6 +7,12 @@ use sqlx::{PgPool, Pool, Postgres};
 use std::env;
 use std::error::Error;
 use tower_http::cors::{AllowOrigin, CorsLayer};
+
+#[derive(Clone)]
+pub struct AppState {
+    pub pool: PgPool,
+    pub config: AppConfig,
+}
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -82,7 +89,8 @@ use handlers::auth::*;
 use handlers::cats::*;
 use handlers::session::*;
 
-pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
+pub async fn create_app(pool: PgPool, config: AppConfig) -> Result<Router, Box<dyn Error>> {
+    let state = AppState { pool, config };
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::exact(HeaderValue::from_static(
             "http://localhost:5173",
@@ -111,7 +119,7 @@ pub async fn create_app(pool: PgPool) -> Result<Router, Box<dyn Error>> {
         .route(BREEDS_LIST, get(breeds_list_handler))
         .route(CAT_ROLE_LIST, get(cat_roles_list_handler))
         .route(INTERESTS_LIST, get(interest_list_handler))
-        .with_state(pool)
+        .with_state(state)
         .layer(CookieLayer::default())
         .layer(cors);
 

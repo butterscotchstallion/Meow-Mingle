@@ -1,16 +1,17 @@
+use crate::AppState;
 use crate::handlers::common::ApiError;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
 use crate::models::photos::populate_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
-use axum::Json;
 
 use axum_cookie::CookieManager;
-use serde_with::{formats::CommaSeparator, serde_as, StringWithSeparator};
-use sqlx::{PgPool, Postgres, QueryBuilder};
+use serde_with::{StringWithSeparator, formats::CommaSeparator, serde_as};
+use sqlx::{Postgres, QueryBuilder};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -91,11 +92,11 @@ pub struct MatchListFilters {
     )
 )]
 pub async fn matches_list_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     cookie_manager: CookieManager,
     Query(match_list_filters): Query<MatchListFilters>,
 ) -> Result<(StatusCode, Json<MatchesListResponse>), ApiError> {
-    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+    let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
@@ -132,7 +133,7 @@ pub async fn matches_list_handler(
 
     let matches = query
         .build_query_as::<Match>()
-        .fetch_all(&pool)
+        .fetch_all(&state.pool)
         .await
         .map_err(|e: sqlx::Error| ApiError::internal(e))?;
 
@@ -156,11 +157,11 @@ pub async fn matches_list_handler(
     )
 )]
 pub async fn match_suggestions_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     cookie_manager: CookieManager,
     age_filter: Query<MatchSuggestionAgeFilter>,
 ) -> Result<(StatusCode, Json<MatchSuggestionsResponse>), ApiError> {
-    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+    let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
@@ -214,15 +215,15 @@ pub async fn match_suggestions_handler(
 
     let rows = query
         .build_query_as::<CatRow>()
-        .fetch_all(&pool)
+        .fetch_all(&state.pool)
         .await
         .map_err(|e: sqlx::Error| ApiError::internal(e))?;
 
     let mut suggestions: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
-    populate_interests(&pool, &mut suggestions)
+    populate_interests(&state.pool, &mut suggestions)
         .await
         .map_err(ApiError::internal)?;
-    populate_photos(&pool, &mut suggestions)
+    populate_photos(&state.pool, &mut suggestions)
         .await
         .map_err(ApiError::internal)?;
 
@@ -247,11 +248,11 @@ pub async fn match_suggestions_handler(
     )
 )]
 pub async fn match_add_update_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     cookie_manager: CookieManager,
     Json(match_request): Json<MatchAddRequest>,
 ) -> Result<(StatusCode, Json<MatchAddedResponse>), ApiError> {
-    let cat = match get_cat_from_session_id(&pool, cookie_manager).await {
+    let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
@@ -268,7 +269,7 @@ pub async fn match_add_update_handler(
     .bind(initiator_id)
     .bind(match_request.target_id)
     .bind(match_request.status)
-    .execute(&pool)
+    .execute(&state.pool)
     .await
     .map_err(ApiError::internal)?;
 

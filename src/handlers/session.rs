@@ -1,14 +1,15 @@
+use crate::AppState;
 use crate::cats::CatDetailResponse;
 use crate::handlers::common::ApiError;
 use crate::models::cat::{Cat, CatRow};
 use crate::models::interests::populate_interests;
 use crate::models::session::get_session_id_from_cookie;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
 use axum_cookie::CookieManager;
-use sqlx::{Error, PgPool};
+use sqlx::Error;
 
 pub mod routes {
     pub const SESSION_GET_FROM_COOKIE: &str = "/api/v1/session";
@@ -25,7 +26,7 @@ pub mod routes {
     )
 )]
 pub async fn session_get_from_cookie_handler(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     cookie_manager: CookieManager,
 ) -> Result<(StatusCode, Json<CatDetailResponse>), ApiError> {
     let session_id = get_session_id_from_cookie(cookie_manager);
@@ -58,14 +59,14 @@ pub async fn session_get_from_cookie_handler(
         "#,
         session_id
     )
-    .fetch_optional(&pool)
+    .fetch_optional(&state.pool)
     .await
     .map_err(|e: Error| ApiError::internal(e))?;
 
     let mut cat = row.map(Cat::from);
     if let Some(c) = cat.as_mut() {
         let mut v = vec![std::mem::take(c)];
-        populate_interests(&pool, &mut v)
+        populate_interests(&state.pool, &mut v)
             .await
             .map_err(ApiError::internal)?;
         *c = v.remove(0);

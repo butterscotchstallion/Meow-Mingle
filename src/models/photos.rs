@@ -33,37 +33,54 @@ pub async fn delete_existing_photos(
     pool: &PgPool,
     cat_id: Uuid,
 ) -> Result<Vec<String>, sqlx::Error> {
-    // Fetch filenames before deleting so the caller can remove the files from disk
+    delete_removed_photos(pool, cat_id, &[]).await
+}
+
+/// Deletes only the photos for `cat_id` whose IDs are NOT in `kept_ids`.
+/// Returns the filenames of deleted photos so the caller can remove them from disk.
+pub async fn delete_removed_photos(
+    pool: &PgPool,
+    cat_id: Uuid,
+    kept_ids: &[Uuid],
+) -> Result<Vec<String>, sqlx::Error> {
+    // Fetch filenames of photos that will be deleted (not in kept_ids)
     let rows = sqlx::query!(
         r#"
-        SELECT p.filename
+        SELECT p.id, p.filename
         FROM cats_photos cp
         JOIN photos p ON cp.photo_id = p.id
         WHERE cp.cat_id = $1
+          AND p.id != ALL($2::uuid[])
         "#,
-        cat_id
+        cat_id,
+        kept_ids as &[Uuid],
     )
     .fetch_all(pool)
     .await?;
 
-    let filenames: Vec<String> = rows.into_iter().map(|r| r.filename).collect();
+    let filenames: Vec<String> = rows.iter().map(|r| r.filename.clone()).collect();
+    let removed_ids: Vec<Uuid> = rows.into_iter().map(|r| r.id).collect();
 
-    // Delete the join rows and the photo rows themselves
+    if removed_ids.is_empty() {
+        return Ok(filenames);
+    }
+
+    // Delete the join rows for removed photos
     sqlx::query!(
-        r#"
-        DELETE FROM photos
-        WHERE id IN (
-            SELECT photo_id FROM cats_photos WHERE cat_id = $1
-        )
-        "#,
-        cat_id
+        r#"DELETE FROM cats_photos WHERE cat_id = $1 AND photo_id = ANY($2::uuid[])"#,
+        cat_id,
+        removed_ids.as_slice() as &[Uuid],
     )
     .execute(pool)
     .await?;
 
-    sqlx::query!(r#"DELETE FROM cats_photos WHERE cat_id = $1"#, cat_id)
-        .execute(pool)
-        .await?;
+    // Delete the photo rows themselves
+    sqlx::query!(
+        r#"DELETE FROM photos WHERE id = ANY($1::uuid[])"#,
+        removed_ids.as_slice() as &[Uuid],
+    )
+    .execute(pool)
+    .await?;
 
     Ok(filenames)
 }

@@ -1,12 +1,13 @@
 use serde::Deserialize;
 use std::fs;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
     pub test_users: ConfigUsers,
+    pub photo_upload_dir: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ConfigUsers {
     pub admin_username: String,
     pub admin_password: String,

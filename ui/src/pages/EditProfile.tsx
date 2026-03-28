@@ -7,6 +7,7 @@ import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { FloatLabel } from "primereact/floatlabel";
 import { ProgressSpinner } from "primereact/progressspinner";
+import { Skeleton } from "primereact/skeleton";
 import { Dialog } from "primereact/dialog";
 import { UserMenu } from "../components/UserMenu";
 import { catSessionProfileHandler } from "../api/sdk.gen";
@@ -41,6 +42,9 @@ export function EditProfile() {
   const [birthDate, setBirthDate] = useState("");
   const [existingPhotos, setExistingPhotos] = useState<CatPhoto[]>([]);
   const [newPhotos, setNewPhotos] = useState<PhotoPreview[]>([]);
+  const [loadingPhotoIds, setLoadingPhotoIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Avatar picker
   const [avatarFilename, setAvatarFilename] = useState("");
@@ -209,6 +213,11 @@ export function EditProfile() {
         form.append("photo", photo.file, photo.file.name);
       }
 
+      // Tell the backend which existing photos to keep — anything not in this
+      // list will be deleted from the DB and disk
+      const keptPhotoIds = existingPhotos.map((p) => p.id);
+      form.append("kept_photo_ids", JSON.stringify(keptPhotoIds));
+
       // Send the current display order of existing photos so the backend
       // can persist it to the photos.order column
       const photoOrder = existingPhotos.map((p, i) => ({ id: p.id, order: i }));
@@ -326,9 +335,46 @@ export function EditProfile() {
           </div>
 
           {loading && (
-            <div className="flex flex-col items-center gap-4 py-10">
-              <ProgressSpinner style={{ width: 48, height: 48 }} />
-              <p className="text-purple-400 text-sm">Loading your profile…</p>
+            <div className="flex flex-col gap-8">
+              {/* Avatar skeleton */}
+              <div className="flex flex-col gap-2">
+                <Skeleton width="3rem" height="0.75rem" className="mb-1" />
+                <div className="flex items-center gap-4">
+                  <Skeleton shape="circle" size="5rem" />
+                  <div className="flex flex-col gap-2 flex-1">
+                    <Skeleton height="2rem" className="w-full" />
+                    <Skeleton height="2rem" className="w-full" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Birth date skeleton */}
+              <Skeleton height="2.75rem" className="w-full" />
+
+              {/* Biography skeleton */}
+              <Skeleton height="7rem" className="w-full" />
+
+              {/* Photos skeleton */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton width="3.5rem" height="0.75rem" />
+                  <Skeleton width="2rem" height="0.75rem" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <Skeleton
+                      key={i}
+                      height="0"
+                      className="w-full aspect-square rounded-lg"
+                      style={{ paddingBottom: "100%" }}
+                    />
+                  ))}
+                </div>
+                <Skeleton height="2.5rem" className="w-full" />
+              </div>
+
+              {/* Save button skeleton */}
+              <Skeleton height="2.75rem" className="w-full" />
             </div>
           )}
 
@@ -455,6 +501,7 @@ export function EditProfile() {
                       const src = `/images/cats/${photo.filename}`;
                       const alt = photo.altText ?? `Photo ${i + 1}`;
                       const isDragOver = dragOverIndex === i;
+                      const isPhotoLoading = loadingPhotoIds.has(photo.id);
                       return (
                         <div
                           key={photo.id}
@@ -469,11 +516,41 @@ export function EditProfile() {
                           onDrop={() => handleDrop(i)}
                           onDragEnd={handleDragEnd}
                         >
+                          {/* Skeleton shown while image loads */}
+                          {isPhotoLoading && (
+                            <Skeleton
+                              className="absolute inset-0 rounded-lg"
+                              height="100%"
+                            />
+                          )}
                           <img
                             src={src}
                             alt={alt}
-                            onClick={() => setLightbox({ src, alt })}
-                            className="w-full h-full object-cover rounded-lg border border-purple-800 cursor-grab active:cursor-grabbing hover:brightness-90 transition-[filter]"
+                            onClick={() =>
+                              !isPhotoLoading && setLightbox({ src, alt })
+                            }
+                            onLoadStart={() =>
+                              setLoadingPhotoIds((prev) =>
+                                new Set(prev).add(photo.id),
+                              )
+                            }
+                            onLoad={() =>
+                              setLoadingPhotoIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(photo.id);
+                                return next;
+                              })
+                            }
+                            onError={() =>
+                              setLoadingPhotoIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(photo.id);
+                                return next;
+                              })
+                            }
+                            className={`w-full h-full object-cover rounded-lg border border-purple-800 cursor-grab active:cursor-grabbing hover:brightness-90 transition-[filter,opacity] ${
+                              isPhotoLoading ? "opacity-0" : "opacity-100"
+                            }`}
                             draggable={false}
                           />
                           {/* Drag handle hint */}
