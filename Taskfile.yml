@@ -3,6 +3,11 @@
 version: "3"
 
 tasks:
+  dev:
+    desc: Run the API server with debug logging
+    cmds:
+      - RUST_LOG=meow_mingle=debug,axum=debug,tower_http=debug cargo run
+
   cov:
     desc: Run test coverage
     cmds:
