@@ -4,12 +4,7 @@ version: "3"
 
 tasks:
   dev:
-    desc: Run the API server with debug logging
-    cmds:
-      - RUST_LOG=meow_mingle=debug,axum=debug,tower_http=debug cargo run
-
-  watch:
-    desc: Run the API server and restart on source changes
+    desc: Run the API server with debug logging and restart on changes
     cmds:
       - RUST_LOG=meow_mingle=debug,axum=debug,tower_http=debug cargo watch -c -w src -x check -x run
 
