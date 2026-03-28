@@ -44,7 +44,9 @@ function CatCardShell({
   expandBio = false,
 }: CatCardShellProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
-  const photos = cat.photos ?? [];
+  const photos = [...(cat.photos ?? [])].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  );
   const hasPhotos = photos.length > 0;
   const currentPhoto = hasPhotos ? photos[photoIndex] : null;
   const url = currentPhoto ? photoUrl(currentPhoto) : null;

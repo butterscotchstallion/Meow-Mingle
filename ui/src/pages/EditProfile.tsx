@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "primereact/card";
 import { InputText } from "primereact/inputtext";
@@ -54,6 +54,10 @@ export function EditProfile() {
   // Lightbox
   const [lightbox, setLightbox] = useState<LightboxItem | null>(null);
 
+  // Drag-and-drop reorder state
+  const dragIndexRef = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   useEffect(() => {
     async function fetchProfile() {
       setLoading(true);
@@ -72,7 +76,11 @@ export function EditProfile() {
         setBiography(cat.biography ?? "");
         setAvatarFilename(cat.avatarFilename ?? "");
         setBirthDate(cat.birthDate ? cat.birthDate.slice(0, 10) : "");
-        setExistingPhotos(cat.photos ?? []);
+        // Sort by the order column so the grid reflects the saved order
+        const sorted = [...(cat.photos ?? [])].sort(
+          (a, b) => (a.order ?? 0) - (b.order ?? 0),
+        );
+        setExistingPhotos(sorted);
       } catch {
         setLoadError(
           "An unexpected error occurred while loading your profile.",
@@ -131,6 +139,41 @@ export function EditProfile() {
     setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // ── Drag-and-drop reorder ──────────────────────────────────────────────────
+
+  const handleDragStart = useCallback((index: number) => {
+    dragIndexRef.current = index;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (dragIndexRef.current !== null && dragIndexRef.current !== index) {
+      setDragOverIndex(index);
+    }
+  }, []);
+
+  const handleDrop = useCallback((index: number) => {
+    const from = dragIndexRef.current;
+    if (from === null || from === index) {
+      dragIndexRef.current = null;
+      setDragOverIndex(null);
+      return;
+    }
+    setExistingPhotos((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(index, 0, moved);
+      return next;
+    });
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
+  }, []);
+
   function removeNewPhoto(index: number) {
     setNewPhotos((prev) => {
       URL.revokeObjectURL(prev[index].previewUrl);
@@ -165,6 +208,11 @@ export function EditProfile() {
       for (const photo of newPhotos) {
         form.append("photo", photo.file, photo.file.name);
       }
+
+      // Send the current display order of existing photos so the backend
+      // can persist it to the photos.order column
+      const photoOrder = existingPhotos.map((p, i) => ({ id: p.id, order: i }));
+      form.append("photo_order", JSON.stringify(photoOrder));
 
       const res = await fetch("/api/v1/profile", {
         method: "PUT",
@@ -391,27 +439,51 @@ export function EditProfile() {
                   </span>
                   <span className="text-xs text-purple-500">
                     {totalPhotos} / {MAX_PHOTOS}
+                    {existingPhotos.length > 1 && (
+                      <span className="ml-2 text-purple-600">
+                        · drag to reorder
+                      </span>
+                    )}
                   </span>
                 </div>
 
                 {/* Combined grid */}
                 {(existingPhotos.length > 0 || newPhotos.length > 0) && (
                   <div className="grid grid-cols-3 gap-2">
-                    {/* Persisted photos */}
+                    {/* Persisted photos — draggable to reorder */}
                     {existingPhotos.map((photo, i) => {
                       const src = `/images/cats/${photo.filename}`;
                       const alt = photo.altText ?? `Photo ${i + 1}`;
+                      const isDragOver = dragOverIndex === i;
                       return (
                         <div
                           key={photo.id}
-                          className="relative group aspect-square"
+                          className={`relative group aspect-square transition-transform ${
+                            isDragOver
+                              ? "scale-105 ring-2 ring-purple-400 rounded-lg"
+                              : ""
+                          }`}
+                          draggable
+                          onDragStart={() => handleDragStart(i)}
+                          onDragOver={(e) => handleDragOver(e, i)}
+                          onDrop={() => handleDrop(i)}
+                          onDragEnd={handleDragEnd}
                         >
                           <img
                             src={src}
                             alt={alt}
                             onClick={() => setLightbox({ src, alt })}
-                            className="w-full h-full object-cover rounded-lg border border-purple-800 cursor-pointer hover:brightness-90 transition-[filter]"
+                            className="w-full h-full object-cover rounded-lg border border-purple-800 cursor-grab active:cursor-grabbing hover:brightness-90 transition-[filter]"
+                            draggable={false}
                           />
+                          {/* Drag handle hint */}
+                          <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-70 transition-opacity pointer-events-none">
+                            <i className="pi pi-bars text-white text-xs drop-shadow" />
+                          </div>
+                          {/* Position badge */}
+                          <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-black/50 text-white px-1.5 py-0.5 rounded pointer-events-none">
+                            {i + 1}
+                          </span>
                           {/* Remove button */}
                           <button
                             type="button"

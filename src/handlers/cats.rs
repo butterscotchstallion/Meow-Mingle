@@ -1,15 +1,16 @@
 use crate::handlers::common::{ApiError, GenericResponse};
 use crate::models::cat::get_cat_by_id;
+use serde_json;
 
 use crate::models::photos::delete_existing_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
+use axum::Json;
 use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
-use axum::Json;
 use axum_cookie::CookieManager;
-use sqlx::types::time::OffsetDateTime;
 use sqlx::PgPool;
+use sqlx::types::time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
@@ -126,6 +127,8 @@ pub async fn cat_update_profile_handler(
     let mut new_avatar_filename: Option<String> = None;
     let mut birth_date: Option<OffsetDateTime> = None;
     let mut uploaded_photo_ids: Vec<Uuid> = Vec::new();
+    // JSON array of {id: Uuid, order: i32} sent by the client after a drag-reorder
+    let mut photo_order: Vec<(Uuid, i32)> = Vec::new();
 
     fs::create_dir_all(PHOTO_UPLOAD_DIR)
         .await
@@ -136,7 +139,7 @@ pub async fn cat_update_profile_handler(
 
         match name.as_str() {
             "biography" => {
-                biography = Some(field.text().await.map_err(|e| ApiError::internal(e))?);
+                biography = Some(field.text().await.map_err(ApiError::internal)?);
             }
             "avatar" => {
                 let original_filename = field.file_name().unwrap_or("upload").to_string();
@@ -145,7 +148,7 @@ pub async fn cat_update_profile_handler(
                     .and_then(|e| e.to_str())
                     .unwrap_or("bin");
 
-                let bytes = field.bytes().await.map_err(|e| ApiError::internal(e))?;
+                let bytes = field.bytes().await.map_err(ApiError::internal)?;
 
                 // Delete the existing avatar file from disk if one exists
                 if let Some(ref existing) = cat.avatar_filename {
@@ -153,7 +156,7 @@ pub async fn cat_update_profile_handler(
                     if fs::try_exists(&old_path).await.unwrap_or(false) {
                         fs::remove_file(&old_path)
                             .await
-                            .map_err(|e| ApiError::internal(e))?;
+                            .map_err(ApiError::internal)?;
                         debug!("Deleted old avatar file: {}", old_path);
                     }
                 }
@@ -171,9 +174,8 @@ pub async fn cat_update_profile_handler(
                 new_avatar_filename = Some(stored_filename);
             }
             "birth_date" => {
-                let raw = field.text().await.map_err(|e| ApiError::internal(e))?;
-                let parsed =
-                    OffsetDateTime::parse(&raw, &Rfc3339).map_err(|e| ApiError::internal(e))?;
+                let raw = field.text().await.map_err(ApiError::internal)?;
+                let parsed = OffsetDateTime::parse(&raw, &Rfc3339).map_err(ApiError::internal)?;
                 birth_date = Some(parsed);
             }
             "photo" => {
@@ -183,7 +185,7 @@ pub async fn cat_update_profile_handler(
                     .and_then(|e| e.to_str())
                     .unwrap_or("bin");
 
-                let bytes = field.bytes().await.map_err(|e| ApiError::internal(e))?;
+                let bytes = field.bytes().await.map_err(ApiError::internal)?;
 
                 // Insert first with a temporary placeholder filename so the DB
                 // generates the UUID for us via gen_random_uuid(). We then rename
@@ -217,6 +219,22 @@ pub async fn cat_update_profile_handler(
                 .map_err(ApiError::internal)?;
 
                 uploaded_photo_ids.push(photo_id);
+            }
+            "photo_order" => {
+                let raw = field.text().await.map_err(ApiError::internal)?;
+                debug!("photo_order raw: {}", raw);
+                // Expect a JSON array: [{"id": "<uuid>", "order": 0}, ...]
+                let parsed: Vec<serde_json::Value> =
+                    serde_json::from_str(&raw).map_err(ApiError::internal)?;
+                for entry in &parsed {
+                    let id = entry["id"].as_str().and_then(|s| Uuid::parse_str(s).ok());
+                    let order = entry["order"].as_i64().map(|n| n as i32);
+                    debug!("photo_order entry — id: {:?}, order: {:?}", id, order);
+                    if let (Some(id), Some(order)) = (id, order) {
+                        photo_order.push((id, order));
+                    }
+                }
+                debug!("photo_order parsed {} entries", photo_order.len());
             }
             _ => {}
         }
@@ -264,14 +282,51 @@ pub async fn cat_update_profile_handler(
     .await
     .map_err(|e: sqlx::Error| ApiError::internal(e))?;
 
-    // Link any uploaded photos to this cat
-    for photo_id in uploaded_photo_ids {
+    // Link any uploaded photos to this cat, assigning order after existing photos
+    let existing_count = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) FROM cats_photos WHERE cat_id = $1"#,
+        cat.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(ApiError::internal)?
+    .unwrap_or(0) as i32;
+
+    for (i, photo_id) in uploaded_photo_ids.iter().enumerate() {
+        let order = existing_count + i as i32;
         sqlx::query(r#"INSERT INTO cats_photos (cat_id, photo_id) VALUES ($1, $2)"#)
             .bind(cat.id)
             .bind(photo_id)
             .execute(&pool)
             .await
             .map_err(ApiError::internal)?;
+
+        sqlx::query!(
+            r#"UPDATE photos SET "order" = $1 WHERE id = $2"#,
+            order,
+            photo_id
+        )
+        .execute(&pool)
+        .await
+        .map_err(ApiError::internal)?;
+    }
+
+    // Apply photo ordering last, after any deletions and insertions, so the
+    // updates aren't wiped by delete_existing_photos and new photo rows exist
+    // before we try to update them.
+    debug!("Applying order for {} photos", photo_order.len());
+    for (photo_id, order) in &photo_order {
+        debug!("Setting order={} for photo_id={}", order, photo_id);
+        let rows = sqlx::query!(
+            r#"UPDATE photos SET "order" = $1 WHERE id = $2"#,
+            order,
+            photo_id
+        )
+        .execute(&pool)
+        .await
+        .map_err(ApiError::internal)?
+        .rows_affected();
+        debug!("  → rows affected: {}", rows);
     }
 
     Ok((
