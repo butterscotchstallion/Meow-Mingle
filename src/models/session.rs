@@ -30,21 +30,21 @@ pub async fn get_or_generate_session_id(
     pool: &sqlx::PgPool,
     cat_id: Uuid,
 ) -> Result<Uuid, sqlx::Error> {
-    let session_id = generate_session_id();
-    sqlx::query(
+    let new_session_id = generate_session_id();
+    let row = sqlx::query!(
         r#"
         INSERT INTO sessions (cat_id, session_id, created_at, updated_at, active)
-		VALUES ($1, $2, NOW(), NOW(), true)
-		ON CONFLICT(cat_id)
-	DO UPDATE SET session_id = $2, updated_at = NOW()
-    "#,
+        VALUES ($1, $2, NOW(), NOW(), true)
+        ON CONFLICT (cat_id)
+        DO UPDATE SET updated_at = NOW()
+        RETURNING session_id
+        "#,
+        cat_id,
+        new_session_id,
     )
-    .bind(cat_id)
-    .bind(session_id)
-    .execute(pool)
-    .await?
-    .rows_affected();
-    Ok(session_id)
+    .fetch_one(pool)
+    .await?;
+    Ok(row.session_id)
 }
 
 pub fn get_session_id_from_cookie(cookie_manager: CookieManager) -> Option<Uuid> {
