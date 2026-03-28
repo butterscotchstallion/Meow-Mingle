@@ -8,6 +8,11 @@ tasks:
     cmds:
       - RUST_LOG=meow_mingle=debug,axum=debug,tower_http=debug cargo run
 
+  watch:
+    desc: Run the API server and restart on source changes
+    cmds:
+      - RUST_LOG=meow_mingle=debug,axum=debug,tower_http=debug cargo watch -c -w src -x check -x run
+
   cov:
     desc: Run test coverage
     cmds:
