@@ -24,7 +24,7 @@ export function UserMenu() {
         {
           label: "Edit Profile",
           icon: "pi pi-user-edit",
-          command: () => navigate("/profile"),
+          command: () => navigate("/edit-profile"),
         },
         {
           label: "Sign Out",

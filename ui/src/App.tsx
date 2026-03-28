@@ -14,7 +14,7 @@ export function App() {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/signin" element={<SignIn />} />
       <Route path="/matches" element={<Matches />} />
-      <Route path="/profile" element={<EditProfile />} />
+      <Route path="/edit-profile" element={<EditProfile />} />
     </Routes>
   );
 }
