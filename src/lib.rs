@@ -1,5 +1,6 @@
 use crate::config::AppConfig;
 use axum::Router;
+use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderName, HeaderValue, Method};
 use axum::routing::{get, put};
 use dotenv::dotenv;
@@ -120,6 +121,7 @@ pub async fn create_app(pool: PgPool, config: AppConfig) -> Result<Router, Box<d
         .route(CAT_ROLE_LIST, get(cat_roles_list_handler))
         .route(INTERESTS_LIST, get(interest_list_handler))
         .with_state(state)
+        .layer(DefaultBodyLimit::max(25 * 1024 * 1024))
         .layer(CookieLayer::default())
         .layer(cors);
 
