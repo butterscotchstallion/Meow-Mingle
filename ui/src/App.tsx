@@ -3,6 +3,7 @@ import { SignUp } from "./pages/SignUp";
 import { SignIn } from "./pages/SignIn";
 import { Matches } from "./pages/Matches";
 import { EditProfile } from "./pages/EditProfile";
+import { ViewProfile } from "./pages/ViewProfile";
 import { useSessionSync } from "./hooks/useSessionSync";
 
 export function App() {
@@ -15,6 +16,7 @@ export function App() {
       <Route path="/signin" element={<SignIn />} />
       <Route path="/matches" element={<Matches />} />
       <Route path="/edit-profile" element={<EditProfile />} />
+      <Route path="/cats/:id" element={<ViewProfile />} />
     </Routes>
   );
 }

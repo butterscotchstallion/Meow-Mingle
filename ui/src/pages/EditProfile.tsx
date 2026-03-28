@@ -28,6 +28,7 @@ interface LightboxItem {
 
 export function EditProfile() {
   const setCat = useAuthStore((s) => s.setCat);
+  const cat = useAuthStore((s) => s.cat);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -256,7 +257,21 @@ export function EditProfile() {
         <Card className="w-full max-w-lg shadow-lg">
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-purple-100">Edit Profile</h1>
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="text-2xl font-bold text-purple-100">
+                Edit Profile
+              </h1>
+              {cat && (
+                <Link to={`/cats/${cat.id}`} className="no-underline">
+                  <Button
+                    label="View Profile"
+                    icon="pi pi-eye"
+                    outlined
+                    size="small"
+                  />
+                </Link>
+              )}
+            </div>
             <p className="mt-1 text-purple-400 text-sm">
               Update your public profile information.
             </p>
