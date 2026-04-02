@@ -75,12 +75,24 @@ pub struct MatchSuggestionAgeFilter {
 }
 
 #[serde_as]
-#[derive(serde::Deserialize, Default)]
+#[derive(serde::Deserialize)]
 #[serde(default)]
 pub struct MatchListFilters {
     initiator_id: Option<Uuid>,
     target_id: Option<Uuid>,
     status: Option<MatchStatus>,
+    seen: bool,
+}
+
+impl Default for MatchListFilters {
+    fn default() -> Self {
+        Self {
+            initiator_id: None,
+            target_id: None,
+            status: None,
+            seen: false,
+        }
+    }
 }
 
 #[axum::debug_handler]
@@ -133,6 +145,10 @@ pub async fn matches_list_handler(
     } else {
         query.push(" AND status != 'declined'");
     }
+
+    // Filter by seen — defaults to false so callers get unseen matches by default
+    query.push(" AND seen = ");
+    query.push_bind(match_list_filters.seen);
 
     let matches = query
         .build_query_as::<Match>()
