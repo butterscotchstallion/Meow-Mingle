@@ -9,6 +9,7 @@ import { FloatLabel } from "primereact/floatlabel";
 import { signInHandler } from "../api/sdk.gen";
 import type { Cat } from "../api/types.gen";
 import { useAuthStore } from "../store/authStore";
+import { AuthLayout } from "../components/AuthLayout";
 
 interface SignInResults {
   cat: Cat;
@@ -75,7 +76,7 @@ export function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#12071f]">
+    <AuthLayout>
       <style>{`
         @keyframes shake {
           0%   { transform: translateX(0); }
@@ -148,6 +149,6 @@ export function SignIn() {
           </p>
         </form>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

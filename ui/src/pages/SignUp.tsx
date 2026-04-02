@@ -7,6 +7,7 @@ import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { FloatLabel } from "primereact/floatlabel";
 import { signUpHandler } from "../api/sdk.gen";
+import { AuthLayout } from "../components/AuthLayout";
 import { useAuthStore } from "../store/authStore";
 
 const MAINE_COON_BREED_ID = "910ee31d-1fb6-428c-8b84-418cb8e55f20";
@@ -57,7 +58,7 @@ export function SignUp() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#12071f]">
+    <AuthLayout>
       <Card className="w-full max-w-md shadow-lg">
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-purple-100">🐱 Meow Mingle</h1>
@@ -132,6 +133,6 @@ export function SignUp() {
           </p>
         </form>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

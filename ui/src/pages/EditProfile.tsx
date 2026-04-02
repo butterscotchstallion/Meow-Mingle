@@ -9,8 +9,7 @@ import { FloatLabel } from "primereact/floatlabel";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Skeleton } from "primereact/skeleton";
 import { Dialog } from "primereact/dialog";
-import { UserMenu } from "../components/UserMenu";
-import { DebugMenu } from "../components/DebugMenu";
+import { AppLayout } from "../components/AppLayout";
 import { catSessionProfileHandler } from "../api/sdk.gen";
 import { useAuthStore } from "../store/authStore";
 import type { Cat, CatPhoto } from "../api/types.gen";
@@ -299,21 +298,7 @@ export function EditProfile() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#12071f]">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-purple-950">
-        <Link
-          to="/matches"
-          className="text-xl font-bold text-purple-100 hover:text-purple-500 transition-colors no-underline"
-        >
-          🐱 Meow Mingle
-        </Link>
-        <div className="flex items-center gap-2">
-          <DebugMenu />
-          <UserMenu />
-        </div>
-      </header>
-
+    <AppLayout mainClassName="flex-1 flex flex-col items-center py-10 px-4">
       {/* Lightbox */}
       <Dialog
         visible={lightbox !== null}
@@ -340,334 +325,329 @@ export function EditProfile() {
         )}
       </Dialog>
 
-      {/* Main */}
-      <main className="flex-1 flex flex-col items-center py-10 px-4">
-        <Card className="w-full max-w-lg shadow-lg">
-          {/* Heading */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="text-2xl font-bold text-purple-100">
-                Edit Profile
-              </h1>
-              {cat && (
-                <Link to={`/cats/${cat.id}`} className="no-underline">
+      <Card className="w-full max-w-lg shadow-lg">
+        {/* Heading */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-2xl font-bold text-purple-100">Edit Profile</h1>
+            {cat && (
+              <Link to={`/cats/${cat.id}`} className="no-underline">
+                <Button
+                  label="View Profile"
+                  icon="pi pi-eye"
+                  outlined
+                  size="small"
+                />
+              </Link>
+            )}
+          </div>
+          <p className="mt-1 text-purple-400 text-sm">
+            Update your public profile information.
+          </p>
+        </div>
+
+        {loading && (
+          <div className="flex flex-col gap-8">
+            {/* Avatar skeleton */}
+            <div className="flex flex-col gap-2">
+              <Skeleton width="3rem" height="0.75rem" className="mb-1" />
+              <div className="flex items-center gap-4">
+                <Skeleton shape="circle" size="5rem" />
+                <div className="flex flex-col gap-2 flex-1">
+                  <Skeleton height="2rem" className="w-full" />
+                  <Skeleton height="2rem" className="w-full" />
+                </div>
+              </div>
+            </div>
+
+            {/* Birth date skeleton */}
+            <Skeleton height="2.75rem" className="w-full" />
+
+            {/* Biography skeleton */}
+            <Skeleton height="7rem" className="w-full" />
+
+            {/* Photos skeleton */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <Skeleton width="3.5rem" height="0.75rem" />
+                <Skeleton width="2rem" height="0.75rem" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton
+                    key={i}
+                    height="0"
+                    className="w-full aspect-square rounded-lg"
+                    style={{ paddingBottom: "100%" }}
+                  />
+                ))}
+              </div>
+              <Skeleton height="2.5rem" className="w-full" />
+            </div>
+
+            {/* Save button skeleton */}
+            <Skeleton height="2.75rem" className="w-full" />
+          </div>
+        )}
+
+        {!loading && loadError && (
+          <Message severity="error" text={loadError} className="w-full" />
+        )}
+
+        {!loading && !loadError && (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+            {/* ── Avatar picker ── */}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-purple-200">
+                Avatar
+              </span>
+              <div className="flex items-center gap-4">
+                {/* Preview circle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const src = avatarPreviewUrl ?? existingAvatarUrl;
+                    if (src) setLightbox({ src, alt: "Avatar" });
+                  }}
+                  className="shrink-0 w-20 h-20 rounded-full overflow-hidden border-2 border-purple-700 bg-purple-950 flex items-center justify-center cursor-pointer hover:border-purple-400 transition-colors focus:outline-none"
+                  aria-label="Preview avatar"
+                  disabled={!avatarPreviewUrl && !existingAvatarUrl}
+                  style={{
+                    cursor:
+                      avatarPreviewUrl || existingAvatarUrl
+                        ? "pointer"
+                        : "default",
+                  }}
+                >
+                  {avatarPreviewUrl || existingAvatarUrl ? (
+                    <img
+                      src={avatarPreviewUrl ?? existingAvatarUrl!}
+                      alt="Avatar preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <i className="pi pi-user text-2xl text-purple-600" />
+                  )}
+                </button>
+
+                <div className="flex flex-col gap-2 flex-1">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
                   <Button
-                    label="View Profile"
-                    icon="pi pi-eye"
+                    type="button"
+                    label={avatarFilename ? "Change avatar" : "Upload avatar"}
+                    icon="pi pi-upload"
                     outlined
                     size="small"
+                    className="w-full"
+                    onClick={() => avatarInputRef.current?.click()}
                   />
-                </Link>
-              )}
-            </div>
-            <p className="mt-1 text-purple-400 text-sm">
-              Update your public profile information.
-            </p>
-          </div>
-
-          {loading && (
-            <div className="flex flex-col gap-8">
-              {/* Avatar skeleton */}
-              <div className="flex flex-col gap-2">
-                <Skeleton width="3rem" height="0.75rem" className="mb-1" />
-                <div className="flex items-center gap-4">
-                  <Skeleton shape="circle" size="5rem" />
-                  <div className="flex flex-col gap-2 flex-1">
-                    <Skeleton height="2rem" className="w-full" />
-                    <Skeleton height="2rem" className="w-full" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Birth date skeleton */}
-              <Skeleton height="2.75rem" className="w-full" />
-
-              {/* Biography skeleton */}
-              <Skeleton height="7rem" className="w-full" />
-
-              {/* Photos skeleton */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <Skeleton width="3.5rem" height="0.75rem" />
-                  <Skeleton width="2rem" height="0.75rem" />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <Skeleton
-                      key={i}
-                      height="0"
-                      className="w-full aspect-square rounded-lg"
-                      style={{ paddingBottom: "100%" }}
-                    />
-                  ))}
-                </div>
-                <Skeleton height="2.5rem" className="w-full" />
-              </div>
-
-              {/* Save button skeleton */}
-              <Skeleton height="2.75rem" className="w-full" />
-            </div>
-          )}
-
-          {!loading && loadError && (
-            <Message severity="error" text={loadError} className="w-full" />
-          )}
-
-          {!loading && !loadError && (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-              {/* ── Avatar picker ── */}
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-purple-200">
-                  Avatar
-                </span>
-                <div className="flex items-center gap-4">
-                  {/* Preview circle */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const src = avatarPreviewUrl ?? existingAvatarUrl;
-                      if (src) setLightbox({ src, alt: "Avatar" });
-                    }}
-                    className="shrink-0 w-20 h-20 rounded-full overflow-hidden border-2 border-purple-700 bg-purple-950 flex items-center justify-center cursor-pointer hover:border-purple-400 transition-colors focus:outline-none"
-                    aria-label="Preview avatar"
-                    disabled={!avatarPreviewUrl && !existingAvatarUrl}
-                    style={{
-                      cursor:
-                        avatarPreviewUrl || existingAvatarUrl
-                          ? "pointer"
-                          : "default",
-                    }}
-                  >
-                    {avatarPreviewUrl || existingAvatarUrl ? (
-                      <img
-                        src={avatarPreviewUrl ?? existingAvatarUrl!}
-                        alt="Avatar preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <i className="pi pi-user text-2xl text-purple-600" />
-                    )}
-                  </button>
-
-                  <div className="flex flex-col gap-2 flex-1">
-                    <input
-                      ref={avatarInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarChange}
-                    />
+                  {(avatarPreviewUrl || avatarFilename) && (
                     <Button
                       type="button"
-                      label={avatarFilename ? "Change avatar" : "Upload avatar"}
-                      icon="pi pi-upload"
+                      label="Remove avatar"
+                      icon="pi pi-trash"
                       outlined
+                      severity="danger"
                       size="small"
                       className="w-full"
-                      onClick={() => avatarInputRef.current?.click()}
+                      onClick={clearAvatar}
                     />
-                    {(avatarPreviewUrl || avatarFilename) && (
-                      <Button
-                        type="button"
-                        label="Remove avatar"
-                        icon="pi pi-trash"
-                        outlined
-                        severity="danger"
-                        size="small"
-                        className="w-full"
-                        onClick={clearAvatar}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
+            </div>
 
-              {/* ── Birth date ── */}
-              <FloatLabel className="w-full">
-                <InputText
-                  id="birthDate"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full"
-                />
-                <label htmlFor="birthDate">Date of birth</label>
-              </FloatLabel>
-
-              {/* ── Biography ── */}
-              <FloatLabel className="w-full">
-                <InputTextarea
-                  id="biography"
-                  value={biography}
-                  onChange={(e) => setBiography(e.target.value)}
-                  className="w-full"
-                  rows={4}
-                  maxLength={500}
-                  autoResize
-                />
-                <label htmlFor="biography">Biography</label>
-              </FloatLabel>
-
-              {/* ── Photos ── */}
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-purple-200">
-                    Photos
-                  </span>
-                  <span className="text-xs text-purple-500">
-                    {totalPhotos} / {MAX_PHOTOS}
-                    {totalPhotos > 1 && (
-                      <span className="ml-2 text-purple-600">
-                        · drag to reorder
-                      </span>
-                    )}
-                  </span>
-                </div>
-
-                {/* Unified draggable grid */}
-                {gridItems.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {gridItems.map((item, i) => {
-                      const isDragOver = dragOverIndex === i;
-                      const isExisting = item.kind === "existing";
-                      const src = isExisting
-                        ? `/images/cats/${item.photo.filename}`
-                        : item.preview.previewUrl;
-                      const alt = isExisting
-                        ? (item.photo.altText ?? `Photo ${i + 1}`)
-                        : `New photo ${i + 1}`;
-                      const itemKey = isExisting ? item.photo.id : item.key;
-                      const isPhotoLoading =
-                        isExisting && loadingPhotoIds.has(item.photo.id);
-
-                      return (
-                        <div
-                          key={itemKey}
-                          className={`relative group aspect-square transition-transform ${
-                            isDragOver
-                              ? "scale-105 ring-2 ring-purple-400 rounded-lg"
-                              : ""
-                          }`}
-                          draggable
-                          onDragStart={() => handleDragStart(i)}
-                          onDragOver={(e) => handleDragOver(e, i)}
-                          onDrop={() => handleDrop(i)}
-                          onDragEnd={handleDragEnd}
-                        >
-                          {/* Skeleton shown while existing image loads */}
-                          {isPhotoLoading && (
-                            <Skeleton
-                              className="absolute inset-0 rounded-lg"
-                              height="100%"
-                            />
-                          )}
-                          <img
-                            src={src}
-                            alt={alt}
-                            onClick={() =>
-                              !isPhotoLoading && setLightbox({ src, alt })
-                            }
-                            onLoadStart={() => {
-                              if (isExisting)
-                                setLoadingPhotoIds((prev) =>
-                                  new Set(prev).add(item.photo.id),
-                                );
-                            }}
-                            onLoad={() => {
-                              if (isExisting)
-                                setLoadingPhotoIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.delete(item.photo.id);
-                                  return next;
-                                });
-                            }}
-                            onError={() => {
-                              if (isExisting)
-                                setLoadingPhotoIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.delete(item.photo.id);
-                                  return next;
-                                });
-                            }}
-                            className={`w-full h-full object-cover rounded-lg border cursor-grab active:cursor-grabbing hover:brightness-90 transition-[filter,opacity] ${
-                              isExisting
-                                ? "border-purple-800"
-                                : "border-dashed border-purple-700"
-                            } ${isPhotoLoading ? "opacity-0" : "opacity-100"}`}
-                            draggable={false}
-                          />
-                          {/* Drag handle hint */}
-                          <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-70 transition-opacity pointer-events-none">
-                            <i className="pi pi-bars text-white text-xs drop-shadow" />
-                          </div>
-                          {/* Position badge */}
-                          <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-black/50 text-white px-1.5 py-0.5 rounded pointer-events-none">
-                            {i + 1}
-                          </span>
-                          {/* New badge for staged uploads */}
-                          {!isExisting && (
-                            <span className="absolute top-1 left-1 text-[10px] font-semibold bg-purple-700 text-purple-100 px-1.5 py-0.5 rounded pointer-events-none">
-                              New
-                            </span>
-                          )}
-                          {/* Remove button */}
-                          <button
-                            type="button"
-                            onClick={() => removeGridItem(i)}
-                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
-                            aria-label={`Remove photo ${i + 1}`}
-                          >
-                            <i className="pi pi-times text-xs" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Add photos */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <Button
-                  type="button"
-                  label="Add photos"
-                  icon="pi pi-image"
-                  outlined
-                  disabled={atLimit}
-                  className="w-full"
-                  onClick={() => fileInputRef.current?.click()}
-                />
-              </div>
-
-              {saveError && (
-                <Message severity="error" text={saveError} className="w-full" />
-              )}
-
-              {saveSuccess && (
-                <Message
-                  severity="success"
-                  text="Profile saved successfully!"
-                  className="w-full"
-                />
-              )}
-
-              <Button
-                type="submit"
-                label="Save Profile"
-                icon="pi pi-check"
-                loading={saving}
+            {/* ── Birth date ── */}
+            <FloatLabel className="w-full">
+              <InputText
+                id="birthDate"
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
                 className="w-full"
               />
-            </form>
-          )}
-        </Card>
-      </main>
-    </div>
+              <label htmlFor="birthDate">Date of birth</label>
+            </FloatLabel>
+
+            {/* ── Biography ── */}
+            <FloatLabel className="w-full">
+              <InputTextarea
+                id="biography"
+                value={biography}
+                onChange={(e) => setBiography(e.target.value)}
+                className="w-full"
+                rows={4}
+                maxLength={500}
+                autoResize
+              />
+              <label htmlFor="biography">Biography</label>
+            </FloatLabel>
+
+            {/* ── Photos ── */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-purple-200">
+                  Photos
+                </span>
+                <span className="text-xs text-purple-500">
+                  {totalPhotos} / {MAX_PHOTOS}
+                  {totalPhotos > 1 && (
+                    <span className="ml-2 text-purple-600">
+                      · drag to reorder
+                    </span>
+                  )}
+                </span>
+              </div>
+
+              {/* Unified draggable grid */}
+              {gridItems.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {gridItems.map((item, i) => {
+                    const isDragOver = dragOverIndex === i;
+                    const isExisting = item.kind === "existing";
+                    const src = isExisting
+                      ? `/images/cats/${item.photo.filename}`
+                      : item.preview.previewUrl;
+                    const alt = isExisting
+                      ? (item.photo.altText ?? `Photo ${i + 1}`)
+                      : `New photo ${i + 1}`;
+                    const itemKey = isExisting ? item.photo.id : item.key;
+                    const isPhotoLoading =
+                      isExisting && loadingPhotoIds.has(item.photo.id);
+
+                    return (
+                      <div
+                        key={itemKey}
+                        className={`relative group aspect-square transition-transform ${
+                          isDragOver
+                            ? "scale-105 ring-2 ring-purple-400 rounded-lg"
+                            : ""
+                        }`}
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragOver={(e) => handleDragOver(e, i)}
+                        onDrop={() => handleDrop(i)}
+                        onDragEnd={handleDragEnd}
+                      >
+                        {/* Skeleton shown while existing image loads */}
+                        {isPhotoLoading && (
+                          <Skeleton
+                            className="absolute inset-0 rounded-lg"
+                            height="100%"
+                          />
+                        )}
+                        <img
+                          src={src}
+                          alt={alt}
+                          onClick={() =>
+                            !isPhotoLoading && setLightbox({ src, alt })
+                          }
+                          onLoadStart={() => {
+                            if (isExisting)
+                              setLoadingPhotoIds((prev) =>
+                                new Set(prev).add(item.photo.id),
+                              );
+                          }}
+                          onLoad={() => {
+                            if (isExisting)
+                              setLoadingPhotoIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(item.photo.id);
+                                return next;
+                              });
+                          }}
+                          onError={() => {
+                            if (isExisting)
+                              setLoadingPhotoIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(item.photo.id);
+                                return next;
+                              });
+                          }}
+                          className={`w-full h-full object-cover rounded-lg border cursor-grab active:cursor-grabbing hover:brightness-90 transition-[filter,opacity] ${
+                            isExisting
+                              ? "border-purple-800"
+                              : "border-dashed border-purple-700"
+                          } ${isPhotoLoading ? "opacity-0" : "opacity-100"}`}
+                          draggable={false}
+                        />
+                        {/* Drag handle hint */}
+                        <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-70 transition-opacity pointer-events-none">
+                          <i className="pi pi-bars text-white text-xs drop-shadow" />
+                        </div>
+                        {/* Position badge */}
+                        <span className="absolute bottom-1 left-1 text-[10px] font-semibold bg-black/50 text-white px-1.5 py-0.5 rounded pointer-events-none">
+                          {i + 1}
+                        </span>
+                        {/* New badge for staged uploads */}
+                        {!isExisting && (
+                          <span className="absolute top-1 left-1 text-[10px] font-semibold bg-purple-700 text-purple-100 px-1.5 py-0.5 rounded pointer-events-none">
+                            New
+                          </span>
+                        )}
+                        {/* Remove button */}
+                        <button
+                          type="button"
+                          onClick={() => removeGridItem(i)}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 cursor-pointer"
+                          aria-label={`Remove photo ${i + 1}`}
+                        >
+                          <i className="pi pi-times text-xs" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add photos */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <Button
+                type="button"
+                label="Add photos"
+                icon="pi pi-image"
+                outlined
+                disabled={atLimit}
+                className="w-full"
+                onClick={() => fileInputRef.current?.click()}
+              />
+            </div>
+
+            {saveError && (
+              <Message severity="error" text={saveError} className="w-full" />
+            )}
+
+            {saveSuccess && (
+              <Message
+                severity="success"
+                text="Profile saved successfully!"
+                className="w-full"
+              />
+            )}
+
+            <Button
+              type="submit"
+              label="Save Profile"
+              icon="pi pi-check"
+              loading={saving}
+              className="w-full"
+            />
+          </form>
+        )}
+      </Card>
+    </AppLayout>
   );
 }
