@@ -3,10 +3,16 @@
 version: "3"
 
 tasks:
-  dev:
+  api:
     desc: Run the API server with debug logging and restart on changes
     cmds:
       - RUST_LOG=meow_mingle=debug,axum=debug,tower_http=debug cargo watch -c -w src -x check -x run
+
+  fe:
+    desc: Run the NPM server for the front end
+    dir: ui/src
+    cmds:
+      - pnpm run dev
 
   cov:
     desc: Run test coverage
