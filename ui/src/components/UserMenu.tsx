@@ -27,6 +27,11 @@ export function UserMenu() {
           command: () => navigate("/edit-profile"),
         },
         {
+          label: "View Profile",
+          icon: "pi pi-eye",
+          command: () => navigate(`/cats/${cat.id}`),
+        },
+        {
           label: "Sign Out",
           icon: "pi pi-sign-out",
           command: handleSignOut,
