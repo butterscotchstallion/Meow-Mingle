@@ -72,7 +72,7 @@ pub mod models;
 use axum_cookie::prelude::*;
 
 use crate::cats::routes::CAT_DETAIL;
-use crate::handlers::auth::routes::{AUTH_SIGN_IN, AUTH_SIGN_UP};
+use crate::handlers::auth::routes::{AUTH_IMPERSONATE, AUTH_SIGN_IN, AUTH_SIGN_UP};
 use crate::handlers::breeds::breeds_list_handler;
 use crate::handlers::breeds::routes::BREEDS_LIST;
 pub use crate::handlers::cats;
@@ -114,6 +114,7 @@ pub async fn create_app(pool: PgPool, config: AppConfig) -> Result<Router, Box<d
         )
         .route(AUTH_SIGN_IN, axum::routing::post(sign_in_handler))
         .route(AUTH_SIGN_UP, axum::routing::post(sign_up_handler))
+        .route(AUTH_IMPERSONATE, axum::routing::post(impersonate_handler))
         .route(MATCHES_LIST, get(matches_list_handler))
         .route(MATCH_SUGGESTIONS, get(match_suggestions_handler))
         .route(MATCH_ADD, axum::routing::post(match_add_update_handler))

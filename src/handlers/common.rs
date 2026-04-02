@@ -41,6 +41,13 @@ impl ApiError {
         )
     }
 
+    pub fn forbidden() -> Self {
+        Self::new(
+            StatusCode::FORBIDDEN,
+            "You do not have permission to perform this action",
+        )
+    }
+
     pub fn internal(e: impl std::fmt::Display) -> Self {
         Self::new(StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
     }

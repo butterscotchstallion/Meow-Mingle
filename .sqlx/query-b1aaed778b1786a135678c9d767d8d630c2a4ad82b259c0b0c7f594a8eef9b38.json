@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COUNT(*) > 0 AS \"is_admin!\"\n        FROM cats_roles cr\n        JOIN roles r ON cr.role_id = r.id\n        WHERE cr.cat_id = $1\n          AND r.slug = 'cat-admin'\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_admin!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b1aaed778b1786a135678c9d767d8d630c2a4ad82b259c0b0c7f594a8eef9b38"
+}

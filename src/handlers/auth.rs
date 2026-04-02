@@ -1,18 +1,39 @@
 use crate::AppState;
+use crate::handlers::common::ApiError;
 use crate::hasher;
-use crate::models::cat::{Cat, NewCat, get_cat_by_name, update_last_seen};
-use crate::models::session::get_or_generate_session_id;
+use crate::models::cat::{Cat, NewCat, get_cat_by_id, get_cat_by_name, update_last_seen};
+use crate::models::session::{get_cat_from_session_id, get_or_generate_session_id};
 use crate::models::status::Status;
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::header::SET_COOKIE;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use serde::Serialize;
+use uuid::Uuid;
+
+const THIRTY_DAYS_SECS: u32 = 30 * 24 * 60 * 60;
+
+fn session_cookie_headers(session_id: uuid::Uuid) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        SET_COOKIE,
+        format!(
+            "{}={}; Path=/; SameSite=None; Secure; Max-Age={}",
+            crate::models::session::SESSION_COOKIE_NAME,
+            session_id,
+            THIRTY_DAYS_SECS,
+        )
+        .parse()
+        .unwrap(),
+    );
+    headers
+}
 
 pub mod routes {
     pub const AUTH_SIGN_IN: &str = "/api/v1/auth/sign-in";
     pub const AUTH_SIGN_UP: &str = "/api/v1/auth/sign-up";
+    pub const AUTH_IMPERSONATE: &str = "/api/v1/auth/impersonate/{cat_id}";
 }
 
 #[derive(Serialize, utoipa::ToSchema)]
@@ -142,20 +163,7 @@ pub async fn sign_in_handler(
             )
         })?;
 
-    let mut headers = HeaderMap::new();
-    const THIRTY_DAYS_SECS: u32 = 30 * 24 * 60 * 60;
-
-    headers.insert(
-        SET_COOKIE,
-        format!(
-            "{}={}; Path=/; SameSite=None; Secure; Max-Age={}",
-            crate::models::session::SESSION_COOKIE_NAME,
-            session_id,
-            THIRTY_DAYS_SECS,
-        )
-        .parse()
-        .unwrap(),
-    );
+    let headers = session_cookie_headers(session_id);
 
     Ok((
         StatusCode::OK,
@@ -242,5 +250,78 @@ pub async fn sign_up_handler(
                 session_id: String::from(session_id),
             }),
         }),
+    ))
+}
+
+#[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = routes::AUTH_IMPERSONATE,
+    params(
+        ("cat_id" = Uuid, Path, description = "UUID of the cat to impersonate")
+    ),
+    responses(
+        (status = 200, description = "Impersonation successful — session cookie set for target cat"),
+        (status = 401, description = "Unauthorized — not signed in"),
+        (status = 403, description = "Forbidden — caller does not have the admin role"),
+        (status = 404, description = "Target cat not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "auth"
+)]
+pub async fn impersonate_handler(
+    State(state): State<AppState>,
+    cookie_manager: axum_cookie::CookieManager,
+    Path(cat_id): Path<Uuid>,
+) -> Result<impl IntoResponse, ApiError> {
+    // Must be signed in
+    let caller = match get_cat_from_session_id(&state.pool, cookie_manager).await {
+        Ok(Some(cat)) => cat,
+        _ => return Err(ApiError::unauthorized()),
+    };
+
+    // Must have the admin role
+    let is_admin = sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) > 0 AS "is_admin!"
+        FROM cats_roles cr
+        JOIN roles r ON cr.role_id = r.id
+        WHERE cr.cat_id = $1
+          AND r.slug = 'cat-admin'
+        "#,
+        caller.id
+    )
+    .fetch_one(&state.pool)
+    .await
+    .map_err(ApiError::internal)?;
+
+    if !is_admin {
+        return Err(ApiError::forbidden());
+    }
+
+    // Target cat must exist
+    let target = get_cat_by_id(&state.pool, cat_id)
+        .await
+        .map_err(ApiError::internal)?
+        .ok_or_else(ApiError::not_found)?;
+
+    // Generate (or reuse) a session for the target cat
+    let session_id = get_or_generate_session_id(&state.pool, target.id)
+        .await
+        .map_err(ApiError::internal)?;
+
+    let headers = session_cookie_headers(session_id);
+
+    Ok((
+        StatusCode::OK,
+        headers,
+        Json(serde_json::json!({
+            "status": "OK",
+            "message": format!("Now impersonating {}", target.name),
+            "results": {
+                "session_id": session_id.to_string(),
+                "cat": target,
+            }
+        })),
     ))
 }
