@@ -58,12 +58,14 @@ export const zMatchStatus = z.enum([
 export const zMatch = z.object({
     id: z.uuid(),
     initiator_id: z.uuid(),
+    seen: z.boolean().nullish(),
     status: zMatchStatus.nullish(),
     target_id: z.uuid()
 });
 
 export const zMatchAddRequest = z.object({
     initiator_id: z.uuid(),
+    seen: z.boolean().nullish(),
     status: zMatchStatus,
     target_id: z.uuid()
 });

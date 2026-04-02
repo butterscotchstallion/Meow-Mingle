@@ -95,12 +95,14 @@ export type InterestListResponse = {
 export type Match = {
     id: string;
     initiator_id: string;
+    seen?: boolean | null;
     status?: null | MatchStatus;
     target_id: string;
 };
 
 export type MatchAddRequest = {
     initiator_id: string;
+    seen?: boolean | null;
     status: MatchStatus;
     target_id: string;
 };
