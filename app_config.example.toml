@@ -1,7 +1,9 @@
 photo_upload_dir = "ui/src/public/images/cats"
 
 [testUsers]
-adminUsername = "admin-user"
-adminPassword = "admin-user-password"
-unprivilegedUsername = "unprivileged-user"
-unprivilegedPassword = "unprivileged-user-password"
+admin_username = ""
+admin_password = ""
+admin_id = ""
+unprivileged_username = ""
+unprivileged_password = ""
+unprivileged_id = ""
