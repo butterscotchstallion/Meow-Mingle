@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id, p.filename\n        FROM cats_photos cp\n        JOIN photos p ON cp.photo_id = p.id\n        WHERE cp.cat_id = $1\n          AND p.id != ALL($2::uuid[])\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "filename",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "8550a169fe9ee58e7428010b7a875eaf97331c97db74c049a74e34458afc6916"
+}

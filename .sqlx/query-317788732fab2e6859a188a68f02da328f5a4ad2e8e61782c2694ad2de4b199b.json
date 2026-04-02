@@ -1,14 +1,15 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM cats_photos WHERE cat_id = $1",
+  "query": "UPDATE photos SET \"order\" = $1 WHERE id = $2",
   "describe": {
     "columns": [],
     "parameters": {
       "Left": [
+        "Int4",
         "Uuid"
       ]
     },
     "nullable": []
   },
-  "hash": "6efbbe370ea1e62d826435817c2e423857a912a6880a954b95837513216796e4"
+  "hash": "317788732fab2e6859a188a68f02da328f5a4ad2e8e61782c2694ad2de4b199b"
 }
