@@ -29,7 +29,7 @@ export function UserMenu() {
         {
           label: "View Profile",
           icon: "pi pi-eye",
-          command: () => navigate(`/cats/${cat.id}`),
+          command: () => navigate(`/cats/${cat?.id}`),
         },
         {
           label: "Sign Out",
