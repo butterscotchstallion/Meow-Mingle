@@ -158,6 +158,7 @@ pub async fn test_two_way_matching() {
             initiator_id: salt_cat_id,
             target_id: pepper_cat_id,
             status: meow_mingle::handlers::matches::MatchStatus::Pending,
+            seen: None,
         })
         .await;
 
@@ -204,6 +205,7 @@ pub async fn test_two_way_matching() {
             initiator_id: salt_cat_id,
             target_id: pepper_cat_id,
             status: meow_mingle::handlers::matches::MatchStatus::Accepted,
+            seen: None,
         }))
         .add_cookie(Cookie::new(
             meow_mingle::models::session::SESSION_COOKIE_NAME,

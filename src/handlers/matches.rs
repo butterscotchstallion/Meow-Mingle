@@ -35,6 +35,7 @@ pub struct Match {
     pub initiator_id: Uuid,
     pub target_id: Uuid,
     pub status: Option<MatchStatus>,
+    pub seen: Option<bool>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
@@ -60,6 +61,7 @@ pub struct MatchAddRequest {
     pub initiator_id: Uuid,
     pub target_id: Uuid,
     pub status: MatchStatus,
+    pub seen: Option<bool>,
 }
 
 #[serde_as]
@@ -101,8 +103,9 @@ pub async fn matches_list_handler(
         _ => return Err(ApiError::unauthorized()),
     };
 
-    let mut query: QueryBuilder<Postgres> =
-        QueryBuilder::new(r#"SELECT id, initiator_id, target_id, status FROM matches WHERE 1=1"#);
+    let mut query: QueryBuilder<Postgres> = QueryBuilder::new(
+        r#"SELECT id, initiator_id, target_id, status, seen FROM matches WHERE 1=1"#,
+    );
 
     // Always scope results to the authenticated cat
     query.push(" AND (initiator_id = ");
@@ -260,15 +263,16 @@ pub async fn match_add_update_handler(
 
     sqlx::query(
         r#"
-        INSERT INTO matches (initiator_id, target_id, status)
-        VALUES ($1, $2, $3)
+        INSERT INTO matches (initiator_id, target_id, status, seen)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (initiator_id, target_id)
-        DO UPDATE SET status = $3
+        DO UPDATE SET status = $3, seen = $4
     "#,
     )
     .bind(initiator_id)
     .bind(match_request.target_id)
     .bind(match_request.status)
+    .bind(match_request.seen)
     .execute(&state.pool)
     .await
     .map_err(ApiError::internal)?;

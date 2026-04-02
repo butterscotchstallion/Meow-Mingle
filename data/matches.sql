@@ -9,6 +9,7 @@ create table public.matches
     target_id    uuid                                               not null,
     created_at   timestamp with time zone default now(),
     status       match_status             default 'pending'::match_status,
+    seen         boolean                  default false,
     constraint matches_pk_unique_init_target
         unique (initiator_id, target_id)
 );
