@@ -4,6 +4,7 @@ import { Button } from "primereact/button";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Message } from "primereact/message";
 import { UserMenu } from "../components/UserMenu";
+import { DebugMenu } from "../components/DebugMenu";
 import { StaticCatCard } from "../components/CatCard";
 import { catDetailHandler } from "../api/sdk.gen";
 import type { Cat, CatDetailResponse } from "../api/types.gen";
@@ -63,7 +64,10 @@ export function ViewProfile() {
         >
           🐱 Meow Mingle
         </Link>
-        <UserMenu />
+        <div className="flex items-center gap-2">
+          <DebugMenu />
+          <UserMenu />
+        </div>
       </header>
 
       {/* Main */}

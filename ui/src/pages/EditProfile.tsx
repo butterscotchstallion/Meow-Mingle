@@ -10,6 +10,7 @@ import { ProgressSpinner } from "primereact/progressspinner";
 import { Skeleton } from "primereact/skeleton";
 import { Dialog } from "primereact/dialog";
 import { UserMenu } from "../components/UserMenu";
+import { DebugMenu } from "../components/DebugMenu";
 import { catSessionProfileHandler } from "../api/sdk.gen";
 import { useAuthStore } from "../store/authStore";
 import type { Cat, CatPhoto } from "../api/types.gen";
@@ -307,7 +308,10 @@ export function EditProfile() {
         >
           🐱 Meow Mingle
         </Link>
-        <UserMenu />
+        <div className="flex items-center gap-2">
+          <DebugMenu />
+          <UserMenu />
+        </div>
       </header>
 
       {/* Lightbox */}

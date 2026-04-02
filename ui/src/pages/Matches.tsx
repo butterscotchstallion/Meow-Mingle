@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { UserMenu } from "../components/UserMenu";
+import { DebugMenu } from "../components/DebugMenu";
 import { Button } from "primereact/button";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Message } from "primereact/message";
@@ -53,7 +54,10 @@ export function Matches() {
         >
           🐱 Meow Mingle
         </Link>
-        <UserMenu />
+        <div className="flex items-center gap-2">
+          <DebugMenu />
+          <UserMenu />
+        </div>
       </header>
 
       {/* Main */}
