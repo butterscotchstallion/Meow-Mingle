@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { breedsListHandler, catDetailHandler, catRolesListHandler, catSessionProfileHandler, catUpdateProfileHandler, matchAddUpdateHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
-import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, CatRolesListHandlerData, CatRolesListHandlerResponse, CatSessionProfileHandlerData, CatSessionProfileHandlerResponse, CatUpdateProfileHandlerData, CatUpdateProfileHandlerResponse, MatchAddUpdateHandlerData, MatchAddUpdateHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
+import { breedsListHandler, catDetailHandler, catRolesListHandler, catSessionProfileHandler, catUpdateProfileHandler, interestListHandler, matchAddUpdateHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
+import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, CatRolesListHandlerData, CatRolesListHandlerResponse, CatSessionProfileHandlerData, CatSessionProfileHandlerResponse, CatUpdateProfileHandlerData, CatUpdateProfileHandlerResponse, InterestListHandlerData, InterestListHandlerResponse, MatchAddUpdateHandlerData, MatchAddUpdateHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
 
 export const signInHandlerMutation = (options?: Partial<Options<SignInHandlerData>>): UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> => {
     const mutationOptions: UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> = {
@@ -95,6 +95,21 @@ export const catDetailHandlerOptions = (options: Options<CatDetailHandlerData>) 
         return data;
     },
     queryKey: catDetailHandlerQueryKey(options)
+});
+
+export const interestListHandlerQueryKey = (options?: Options<InterestListHandlerData>) => createQueryKey('interestListHandler', options);
+
+export const interestListHandlerOptions = (options?: Options<InterestListHandlerData>) => queryOptions<InterestListHandlerResponse, DefaultError, InterestListHandlerResponse, ReturnType<typeof interestListHandlerQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await interestListHandler({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: interestListHandlerQueryKey(options)
 });
 
 export const matchesListHandlerQueryKey = (options?: Options<MatchesListHandlerData>) => createQueryKey('matchesListHandler', options);

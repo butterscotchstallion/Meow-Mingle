@@ -87,6 +87,11 @@ export type Interest = {
     name: string;
 };
 
+export type InterestListResponse = {
+    results: Array<Interest>;
+    status: Status;
+};
+
 export type Match = {
     id: string;
     initiator_id: string;
@@ -241,6 +246,29 @@ export type CatDetailHandlerResponses = {
 };
 
 export type CatDetailHandlerResponse = CatDetailHandlerResponses[keyof CatDetailHandlerResponses];
+
+export type InterestListHandlerData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/interests';
+};
+
+export type InterestListHandlerErrors = {
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type InterestListHandlerResponses = {
+    /**
+     * List of all interests
+     */
+    200: InterestListResponse;
+};
+
+export type InterestListHandlerResponse = InterestListHandlerResponses[keyof InterestListHandlerResponses];
 
 export type MatchesListHandlerData = {
     body?: never;

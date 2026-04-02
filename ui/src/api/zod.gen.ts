@@ -119,6 +119,11 @@ export const zGenericResponse = z.object({
     status: zStatus
 });
 
+export const zInterestListResponse = z.object({
+    results: z.array(zInterest),
+    status: zStatus
+});
+
 export const zMatchAddedResponse = z.object({
     message: z.string(),
     status: zStatus
@@ -179,6 +184,17 @@ export const zCatDetailHandlerData = z.object({
  * Details for a specific cat
  */
 export const zCatDetailHandlerResponse = zCatDetailResponse;
+
+export const zInterestListHandlerData = z.object({
+    body: z.never().optional(),
+    path: z.never().optional(),
+    query: z.never().optional()
+});
+
+/**
+ * List of all interests
+ */
+export const zInterestListHandlerResponse = zInterestListResponse;
 
 export const zMatchesListHandlerData = z.object({
     body: z.never().optional(),

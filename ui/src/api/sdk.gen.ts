@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BreedsListHandlerData, BreedsListHandlerErrors, BreedsListHandlerResponses, CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, CatRolesListHandlerData, CatRolesListHandlerErrors, CatRolesListHandlerResponses, CatSessionProfileHandlerData, CatSessionProfileHandlerErrors, CatSessionProfileHandlerResponses, CatUpdateProfileHandlerData, CatUpdateProfileHandlerErrors, CatUpdateProfileHandlerResponses, MatchAddUpdateHandlerData, MatchAddUpdateHandlerErrors, MatchAddUpdateHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerErrors, SessionGetFromCookieHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
+import type { BreedsListHandlerData, BreedsListHandlerErrors, BreedsListHandlerResponses, CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, CatRolesListHandlerData, CatRolesListHandlerErrors, CatRolesListHandlerResponses, CatSessionProfileHandlerData, CatSessionProfileHandlerErrors, CatSessionProfileHandlerResponses, CatUpdateProfileHandlerData, CatUpdateProfileHandlerErrors, CatUpdateProfileHandlerResponses, InterestListHandlerData, InterestListHandlerErrors, InterestListHandlerResponses, MatchAddUpdateHandlerData, MatchAddUpdateHandlerErrors, MatchAddUpdateHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerErrors, SessionGetFromCookieHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -39,6 +39,8 @@ export const signUpHandler = <ThrowOnError extends boolean = false>(options: Opt
 export const breedsListHandler = <ThrowOnError extends boolean = false>(options?: Options<BreedsListHandlerData, ThrowOnError>) => (options?.client ?? client).get<BreedsListHandlerResponses, BreedsListHandlerErrors, ThrowOnError>({ url: '/api/v1/breeds', ...options });
 
 export const catDetailHandler = <ThrowOnError extends boolean = false>(options: Options<CatDetailHandlerData, ThrowOnError>) => (options.client ?? client).get<CatDetailHandlerResponses, CatDetailHandlerErrors, ThrowOnError>({ url: '/api/v1/cats/{id}', ...options });
+
+export const interestListHandler = <ThrowOnError extends boolean = false>(options?: Options<InterestListHandlerData, ThrowOnError>) => (options?.client ?? client).get<InterestListHandlerResponses, InterestListHandlerErrors, ThrowOnError>({ url: '/api/v1/interests', ...options });
 
 export const matchesListHandler = <ThrowOnError extends boolean = false>(options?: Options<MatchesListHandlerData, ThrowOnError>) => (options?.client ?? client).get<MatchesListHandlerResponses, MatchesListHandlerErrors, ThrowOnError>({ url: '/api/v1/matches', ...options });
 
