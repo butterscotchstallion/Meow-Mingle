@@ -10,6 +10,8 @@ A dating app for cats to find your purrfect match
 
 ![Edit Profile](screenshots/edit-profile.png)
 
+![My Matches - Match](screenshots/my-matches-match.png)
+
 ![My Matches](screenshots/my-matches.png)
 
 ## Tech Stack
