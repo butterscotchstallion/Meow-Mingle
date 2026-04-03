@@ -40,6 +40,7 @@ export function DebugMenu() {
         text
         aria-label="Open debug menu"
         aria-haspopup
+        title="Debug menu"
         aria-controls="debug-menu"
         onClick={(e) => menuRef.current?.toggle(e)}
         className="text-purple-400 hover:text-purple-200 transition-colors"

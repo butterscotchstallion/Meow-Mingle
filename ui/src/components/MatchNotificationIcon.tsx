@@ -22,6 +22,7 @@ export function MatchNotificationIcon() {
 
   return (
     <button
+      title={hasNewMatches ? "You have new matches" : "No new matches"}
       type="button"
       aria-label={hasNewMatches ? "You have new matches" : "No new matches"}
       onClick={() => navigate("/my-matches")}
