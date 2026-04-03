@@ -280,9 +280,9 @@ pub async fn match_add_update_handler(
     sqlx::query(
         r#"
         INSERT INTO matches (initiator_id, target_id, status, seen)
-        VALUES ($1, $2, $3, $4)
+        VALUES ($1, $2, $3, COALESCE($4, false))
         ON CONFLICT (initiator_id, target_id)
-        DO UPDATE SET status = $3, seen = $4
+        DO UPDATE SET status = $3, seen = COALESCE($4, matches.seen)
     "#,
     )
     .bind(initiator_id)
