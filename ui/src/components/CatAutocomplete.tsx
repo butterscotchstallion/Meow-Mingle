@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AutoComplete, AutoCompleteCompleteEvent } from "primereact/autocomplete";
+import {
+  AutoComplete,
+  AutoCompleteCompleteEvent,
+} from "primereact/autocomplete";
 import { useAuthStore } from "../store/authStore";
 import type { Cat } from "../api/types.gen";
 
@@ -25,7 +28,7 @@ export function CatAutocomplete() {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/v2/cats/autocomplete?q=${encodeURIComponent(q)}`,
+          `/api/v1/cats/autocomplete?q=${encodeURIComponent(q)}`,
           { credentials: "include" },
         );
         if (!res.ok) return;
@@ -44,7 +47,9 @@ export function CatAutocomplete() {
       completeMethod={search}
       field="name"
       placeholder="Search cats…"
-      onChange={(e) => setValue(typeof e.value === "string" ? e.value : e.value?.name ?? "")}
+      onChange={(e) =>
+        setValue(typeof e.value === "string" ? e.value : (e.value?.name ?? ""))
+      }
       onSelect={(e) => {
         const selected = e.value as Cat;
         setValue("");

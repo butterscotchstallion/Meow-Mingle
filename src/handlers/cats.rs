@@ -20,7 +20,7 @@ use uuid::Uuid;
 pub mod routes {
     pub const CAT_DETAIL: &str = "/api/v1/cats/{id}";
     pub const CAT_SESSION_PROFILE: &str = "/api/v1/profile";
-    pub const CAT_AUTOCOMPLETE: &str = "/api/v2/cats/autocomplete";
+    pub const CAT_AUTOCOMPLETE: &str = "/api/v1/cats/autocomplete";
 }
 
 #[derive(serde::Deserialize, Default)]
