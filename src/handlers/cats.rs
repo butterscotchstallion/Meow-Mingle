@@ -29,7 +29,7 @@ pub struct CatAutocompleteQuery {
     pub q: String,
 }
 
-#[derive(serde::Serialize, utoipa::ToSchema)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, utoipa::ToSchema)]
 pub struct CatAutocompleteResponse {
     pub status: crate::models::status::Status,
     pub results: Vec<crate::models::cat::Cat>,
@@ -132,6 +132,9 @@ pub async fn cat_autocomplete_handler(
     .map_err(ApiError::internal)?;
 
     let cats: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
+
+    debug!("querying autocomplete for {}", params.q);
+    debug!("results: {:?}", cats);
 
     Ok((
         StatusCode::OK,

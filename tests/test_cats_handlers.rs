@@ -2,9 +2,14 @@ use axum::http::StatusCode;
 use axum_test::multipart::{MultipartForm, Part};
 use cookie::Cookie;
 use meow_mingle::cats::routes;
+use meow_mingle::config;
+use meow_mingle::handlers::cats::CatAutocompleteResponse;
+use meow_mingle::models::session::SESSION_COOKIE_NAME;
 use meow_mingle::models::status::Status;
 mod common;
-use crate::common::auth_helpers::{sign_up_and_get_session_and_cat_id, sign_up_and_get_session_id};
+use crate::common::auth_helpers::{
+    get_session_id_and_verify, sign_up_and_get_session_and_cat_id, sign_up_and_get_session_id,
+};
 use crate::common::cat_helpers::{
     get_cat_profile_by_id_and_verify, get_cat_session_profile_and_verify,
 };
@@ -12,6 +17,202 @@ use common::helpers::get_server;
 use meow_mingle::handlers::common::GenericResponse;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
+
+// ── Autocomplete endpoint ─────────────────────────────────────────────────
+
+#[tokio::test]
+async fn test_autocomplete_requires_auth() {
+    // No session cookie → 401
+    let server = get_server().await;
+    let response = server
+        .get(routes::CAT_AUTOCOMPLETE)
+        .add_query_param("q", "frey")
+        .await;
+
+    response.assert_status(StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_autocomplete_requires_admin_role() {
+    // Signed in as a freshly-registered (non-admin) cat → 403
+    let server = get_server().await;
+    let session_id = sign_up_and_get_session_id().await;
+
+    let response = server
+        .get(routes::CAT_AUTOCOMPLETE)
+        .add_query_param("q", "frey")
+        .add_cookie(Cookie::new(SESSION_COOKIE_NAME, session_id))
+        .await;
+
+    response.assert_status(StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_autocomplete_empty_query_returns_empty_results() {
+    // Admin with q="" → 200 with empty results (short-circuit path)
+    let server = get_server().await;
+    let cfg = config::load_config();
+    let admin_session = get_session_id_and_verify(
+        cfg.test_users.admin_username.clone(),
+        cfg.test_users.admin_password.clone(),
+    )
+    .await;
+
+    let response = server
+        .get(routes::CAT_AUTOCOMPLETE)
+        .add_query_param("q", "")
+        .add_cookie(Cookie::new(SESSION_COOKIE_NAME, admin_session))
+        .await;
+
+    response.assert_status(StatusCode::OK);
+
+    let body = response.json::<CatAutocompleteResponse>();
+    assert_eq!(body.status, Status::Ok);
+    assert!(
+        body.results.is_empty(),
+        "Expected empty results for an empty query, got {} result(s)",
+        body.results.len()
+    );
+}
+
+#[tokio::test]
+async fn test_autocomplete_missing_query_param_returns_empty_results() {
+    // Admin with no ?q parameter at all → defaults to "" → same empty-results path
+    let server = get_server().await;
+    let cfg = config::load_config();
+    let admin_session = get_session_id_and_verify(
+        cfg.test_users.admin_username.clone(),
+        cfg.test_users.admin_password.clone(),
+    )
+    .await;
+
+    let response = server
+        .get(routes::CAT_AUTOCOMPLETE)
+        .add_cookie(Cookie::new(SESSION_COOKIE_NAME, admin_session))
+        .await;
+
+    response.assert_status(StatusCode::OK);
+
+    let body = response.json::<CatAutocompleteResponse>();
+    assert_eq!(body.status, Status::Ok);
+    assert!(
+        body.results.is_empty(),
+        "Expected empty results when q param is absent"
+    );
+}
+
+#[tokio::test]
+async fn test_autocomplete_returns_matching_cats_for_admin() {
+    // Admin searches for their own name — must find at least themselves
+    let server = get_server().await;
+    let cfg = config::load_config();
+    let admin_session = get_session_id_and_verify(
+        cfg.test_users.admin_username.clone(),
+        cfg.test_users.admin_password.clone(),
+    )
+    .await;
+
+    // Use the first few characters of the admin username as the search term
+    let query = &cfg.test_users.admin_username[..3];
+
+    let response = server
+        .get(routes::CAT_AUTOCOMPLETE)
+        .add_query_param("q", query)
+        .add_cookie(Cookie::new(SESSION_COOKIE_NAME, admin_session))
+        .await;
+
+    response.assert_status(StatusCode::OK);
+
+    let body = response.json::<CatAutocompleteResponse>();
+    assert_eq!(body.status, Status::Ok);
+    assert!(
+        !body.results.is_empty(),
+        "Expected at least one result matching '{}', got none",
+        query
+    );
+
+    // The admin cat must appear in the results
+    let admin_id = cfg
+        .test_users
+        .admin_id
+        .parse::<uuid::Uuid>()
+        .expect("admin_id in config should be a valid UUID");
+    let found = body.results.iter().any(|cat| cat.id == admin_id);
+    assert!(
+        found,
+        "Expected admin cat '{}' (id={}) to appear in autocomplete results for query '{}', but it was not found. Results: {:?}",
+        cfg.test_users.admin_username,
+        admin_id,
+        query,
+        body.results.iter().map(|c| &c.name).collect::<Vec<_>>()
+    );
+}
+
+#[tokio::test]
+async fn test_autocomplete_result_cats_have_no_password() {
+    // Passwords must never be returned by the API
+    let server = get_server().await;
+    let cfg = config::load_config();
+    let admin_session = get_session_id_and_verify(
+        cfg.test_users.admin_username.clone(),
+        cfg.test_users.admin_password.clone(),
+    )
+    .await;
+
+    let query = &cfg.test_users.admin_username[..3];
+
+    let response = server
+        .get(routes::CAT_AUTOCOMPLETE)
+        .add_query_param("q", query)
+        .add_cookie(Cookie::new(SESSION_COOKIE_NAME, admin_session))
+        .await;
+
+    response.assert_status(StatusCode::OK);
+
+    // Check the raw JSON so we catch both `""` and a missing field
+    let raw = response.json::<serde_json::Value>();
+    for cat in raw["results"]
+        .as_array()
+        .expect("results should be an array")
+    {
+        let password = cat["password"].as_str().unwrap_or("");
+        assert!(
+            password.is_empty(),
+            "Expected password to be empty/absent in autocomplete result, got: '{}'",
+            password
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_autocomplete_no_results_for_nonexistent_name() {
+    // A query guaranteed not to match any cat name
+    let server = get_server().await;
+    let cfg = config::load_config();
+    let admin_session = get_session_id_and_verify(
+        cfg.test_users.admin_username.clone(),
+        cfg.test_users.admin_password.clone(),
+    )
+    .await;
+
+    let response = server
+        .get(routes::CAT_AUTOCOMPLETE)
+        .add_query_param("q", "zzz_no_such_cat_zzz")
+        .add_cookie(Cookie::new(SESSION_COOKIE_NAME, admin_session))
+        .await;
+
+    response.assert_status(StatusCode::OK);
+
+    let body = response.json::<CatAutocompleteResponse>();
+    assert_eq!(body.status, Status::Ok);
+    assert!(
+        body.results.is_empty(),
+        "Expected no results for a nonsense query, got {} result(s)",
+        body.results.len()
+    );
+}
+
+// ── Existing cat profile tests ────────────────────────────────────────────
 
 #[tokio::test]
 async fn test_get_cat_detail_by_cat_id() {
