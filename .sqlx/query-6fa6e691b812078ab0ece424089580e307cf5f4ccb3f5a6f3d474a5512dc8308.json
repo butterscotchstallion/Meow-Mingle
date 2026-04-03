@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT c.id, c.name, c.password, c.created_at, c.updated_at,\n               c.last_seen, c.active, c.avatar_filename, c.biography,\n               c.birth_date, cat_breeds.id AS breed_id,\n               cat_breeds.name AS breed_name,\n               DATE_PART('year', AGE(c.birth_date))::int AS age\n        FROM cats c\n        JOIN cat_breeds ON c.breed_id = cat_breeds.id\n        WHERE c.name ILIKE $1\n        ORDER BY c.name ASC\n        LIMIT 20\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "last_seen",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "avatar_filename",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "biography",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "birth_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "breed_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 11,
+        "name": "breed_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "age",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "6fa6e691b812078ab0ece424089580e307cf5f4ccb3f5a6f3d474a5512dc8308"
+}

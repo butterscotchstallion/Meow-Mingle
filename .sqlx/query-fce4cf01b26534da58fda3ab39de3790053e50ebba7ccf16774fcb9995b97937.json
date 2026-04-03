@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COUNT(*) > 0 AS \"has_role!\"\n        FROM cats_roles cr\n        JOIN roles r ON cr.role_id = r.id\n        WHERE cr.cat_id = $1\n          AND r.slug = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "has_role!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fce4cf01b26534da58fda3ab39de3790053e50ebba7ccf16774fcb9995b97937"
+}
