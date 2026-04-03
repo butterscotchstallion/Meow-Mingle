@@ -3,38 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Message } from "primereact/message";
 import { Button } from "primereact/button";
-import { Chip } from "primereact/chip";
 import { AppLayout } from "../components/AppLayout";
-import { matchesListHandler } from "../api/sdk.gen";
+import { matchesListHandler, catDetailHandler } from "../api/sdk.gen";
 import { useAuthStore } from "../store/authStore";
-import type { Match } from "../api/types.gen";
-import { MatchStatus } from "../api/types.gen";
+import { photoUrl } from "../components/CatCard";
+import type { Match, Cat, CatDetailResponse } from "../api/types.gen";
 
-function statusLabel(status: MatchStatus | null | undefined): string {
-  switch (status) {
-    case MatchStatus.ACCEPTED:
-      return "Accepted";
-    case MatchStatus.PENDING:
-      return "Pending";
-    case MatchStatus.DECLINED:
-      return "Declined";
-    default:
-      return "Unknown";
-  }
+interface MatchWithCat {
+  match: Match;
+  otherCat: Cat;
+  isInitiator: boolean;
 }
 
-function statusSeverity(
-  status: MatchStatus | null | undefined,
-): "success" | "warn" | "danger" | "secondary" {
-  switch (status) {
-    case MatchStatus.ACCEPTED:
-      return "success";
-    case MatchStatus.PENDING:
-      return "warn";
-    case MatchStatus.DECLINED:
-      return "danger";
-    default:
-      return "secondary";
+async function fetchCatById(id: string): Promise<Cat | null> {
+  try {
+    const { data, error } = await catDetailHandler({ path: { id } });
+    if (error || !data) return null;
+    const response = data as unknown as CatDetailResponse;
+    return response.results ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -42,11 +30,10 @@ export function MyMatches() {
   const navigate = useNavigate();
   const cat = useAuthStore((s) => s.cat);
 
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matchesWithCats, setMatchesWithCats] = useState<MatchWithCat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Auth guard — redirect to sign in if not signed in
   useEffect(() => {
     if (!cat) {
       navigate("/signin", { replace: true });
@@ -70,7 +57,22 @@ export function MyMatches() {
           setError("Could not load your matches. Please try again.");
           return;
         }
-        setMatches(data.results);
+
+        const matches = data.results;
+
+        // Fetch all other-cat profiles in parallel
+        const resolved = await Promise.all(
+          matches.map(async (match) => {
+            const isInitiator = match.initiator_id === cat!.id;
+            const otherId = isInitiator ? match.target_id : match.initiator_id;
+            const otherCat = await fetchCatById(otherId);
+            if (!otherCat) return null;
+            return { match, otherCat, isInitiator } satisfies MatchWithCat;
+          }),
+        );
+
+        if (controller.signal.aborted) return;
+        setMatchesWithCats(resolved.filter((r) => r !== null));
       } catch {
         if (controller.signal.aborted) return;
         setError("An unexpected error occurred.");
@@ -110,10 +112,12 @@ export function MyMatches() {
           </div>
         )}
 
-        {!loading && !error && matches.length === 0 && (
+        {!loading && !error && matchesWithCats.length === 0 && (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <span className="text-7xl">💔</span>
-            <h2 className="text-xl font-bold text-purple-100">No matches yet</h2>
+            <h2 className="text-xl font-bold text-purple-100">
+              No matches yet
+            </h2>
             <p className="text-purple-400 text-sm max-w-xs">
               Start swiping to find your purrfect match!
             </p>
@@ -125,40 +129,56 @@ export function MyMatches() {
           </div>
         )}
 
-        {!loading && !error && matches.length > 0 && (
+        {!loading && !error && matchesWithCats.length > 0 && (
           <ul className="flex flex-col gap-3">
-            {matches.map((match) => {
-              const isInitiator = match.initiator_id === cat.id;
-              const otherCatId = isInitiator
-                ? match.target_id
-                : match.initiator_id;
-              const role = isInitiator ? "You liked them" : "They liked you";
+            {matchesWithCats.map(({ match, otherCat, isInitiator }) => {
+              const sortedPhotos = [...(otherCat.photos ?? [])].sort(
+                (a, b) => (a.order ?? 0) - (b.order ?? 0),
+              );
+              const firstPhoto = sortedPhotos[0] ?? null;
+              const thumbUrl = firstPhoto ? photoUrl(firstPhoto) : null;
+
+              const meta: string[] = [];
+              if (otherCat.age != null) meta.push(`${otherCat.age} yrs`);
+              if (otherCat.breedName) meta.push(otherCat.breedName);
 
               return (
-                <li
-                  key={match.id}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-purple-900 bg-purple-950/50 px-5 py-4 hover:border-purple-700 transition-colors"
-                >
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/cats/${otherCatId}`)}
-                      className="text-left text-purple-100 font-medium hover:text-purple-300 transition-colors truncate bg-transparent border-0 cursor-pointer p-0"
-                    >
-                      {otherCatId}
-                    </button>
-                    <span className="text-xs text-purple-500">{role}</span>
-                  </div>
+                <li key={match.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/cats/${otherCat.id}`)}
+                    className="w-full flex items-center gap-4 rounded-xl border border-purple-900 bg-purple-950/50 px-5 py-4 hover:border-purple-700 transition-colors text-left cursor-pointer"
+                  >
+                    {/* Circular thumbnail */}
+                    <div className="shrink-0 w-14 h-14 rounded-full overflow-hidden border-2 border-purple-800 bg-purple-900 flex items-center justify-center">
+                      {thumbUrl ? (
+                        <img
+                          src={thumbUrl}
+                          alt={otherCat.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <i className="pi pi-user text-purple-600 text-xl" />
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Chip
-                      label={statusLabel(match.status)}
-                      className={`text-xs p-chip-${statusSeverity(match.status)}`}
-                    />
+                    {/* Details */}
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-purple-100 font-medium truncate">
+                        {otherCat.name}
+                      </span>
+                      {meta.length > 0 && (
+                        <span className="text-xs text-purple-400 truncate">
+                          {meta.join(" · ")}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Unseen indicator */}
                     {match.seen === false && (
-                      <span className="w-2 h-2 rounded-full bg-purple-300 shrink-0" />
+                      <span className="ml-auto shrink-0 w-2 h-2 rounded-full bg-purple-300" />
                     )}
-                  </div>
+                  </button>
                 </li>
               );
             })}
