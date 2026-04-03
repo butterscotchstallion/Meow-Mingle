@@ -76,7 +76,7 @@ use crate::handlers::auth::routes::{AUTH_IMPERSONATE, AUTH_SIGN_IN, AUTH_SIGN_UP
 use crate::handlers::breeds::breeds_list_handler;
 use crate::handlers::breeds::routes::BREEDS_LIST;
 pub use crate::handlers::cats;
-use crate::handlers::cats::routes::CAT_SESSION_PROFILE;
+use crate::handlers::cats::routes::{CAT_AUTOCOMPLETE, CAT_SESSION_PROFILE};
 use crate::handlers::interests::interest_list_handler;
 use crate::handlers::interests::routes::INTERESTS_LIST;
 use crate::handlers::matches::routes::{MATCH_ADD, MATCH_SUGGESTIONS, MATCHES_LIST};
@@ -107,6 +107,7 @@ pub async fn create_app(pool: PgPool, config: AppConfig) -> Result<Router, Box<d
     let api_router = Router::new()
         .route(CAT_DETAIL, get(cat_detail_handler))
         .route(CAT_SESSION_PROFILE, get(cat_session_profile_handler))
+        .route(CAT_AUTOCOMPLETE, get(cat_autocomplete_handler))
         .route(CAT_SESSION_PROFILE, put(cat_update_profile_handler))
         .route(
             SESSION_GET_FROM_COOKIE,

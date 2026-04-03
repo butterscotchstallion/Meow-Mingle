@@ -3,6 +3,7 @@ import { Menu } from "primereact/menu";
 import { Button } from "primereact/button";
 import type { MenuItem } from "primereact/menuitem";
 import { useAuthStore } from "../store/authStore";
+import { CatAutocomplete } from "./CatAutocomplete";
 
 export function DebugMenu() {
   const menuRef = useRef<Menu>(null);
@@ -26,7 +27,8 @@ export function DebugMenu() {
   ];
 
   return (
-    <>
+    <div className="flex items-center gap-2">
+      <CatAutocomplete />
       <Menu
         ref={menuRef}
         model={menuItems}
@@ -45,6 +47,6 @@ export function DebugMenu() {
         onClick={(e) => menuRef.current?.toggle(e)}
         className="text-purple-400 hover:text-purple-200 transition-colors"
       />
-    </>
+    </div>
   );
 }

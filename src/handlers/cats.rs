@@ -7,7 +7,7 @@ use crate::models::photos::delete_removed_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
-use axum::extract::{Multipart, Path, State};
+use axum::extract::{Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use axum_cookie::CookieManager;
 use sqlx::types::time::OffsetDateTime;
@@ -20,6 +20,19 @@ use uuid::Uuid;
 pub mod routes {
     pub const CAT_DETAIL: &str = "/api/v1/cats/{id}";
     pub const CAT_SESSION_PROFILE: &str = "/api/v1/profile";
+    pub const CAT_AUTOCOMPLETE: &str = "/api/v2/cats/autocomplete";
+}
+
+#[derive(serde::Deserialize, Default)]
+#[serde(default)]
+pub struct CatAutocompleteQuery {
+    pub q: String,
+}
+
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct CatAutocompleteResponse {
+    pub status: crate::models::status::Status,
+    pub results: Vec<crate::models::cat::Cat>,
 }
 
 #[derive(serde::Serialize, Debug, serde::Deserialize, utoipa::ToSchema)]
@@ -64,6 +77,67 @@ pub async fn cat_detail_handler(
             status: Status::Ok,
             message: Some("Success".to_string()),
             results: cat,
+        }),
+    ))
+}
+
+#[axum::debug_handler]
+pub async fn cat_autocomplete_handler(
+    State(state): State<AppState>,
+    cookie_manager: CookieManager,
+    Query(params): Query<CatAutocompleteQuery>,
+) -> Result<(StatusCode, Json<CatAutocompleteResponse>), ApiError> {
+    use crate::models::cat::Cat;
+    use crate::models::cat::CatRow;
+
+    let caller = match get_cat_from_session_id(&state.pool, cookie_manager).await {
+        Ok(Some(cat)) => cat,
+        _ => return Err(ApiError::unauthorized()),
+    };
+
+    let is_admin = crate::models::rbac::cat_has_role(&state.pool, caller.id, "cat-admin").await?;
+
+    if !is_admin {
+        return Err(ApiError::forbidden());
+    }
+
+    if params.q.is_empty() {
+        return Ok((
+            StatusCode::OK,
+            Json(CatAutocompleteResponse {
+                status: crate::models::status::Status::Ok,
+                results: vec![],
+            }),
+        ));
+    }
+
+    let rows = sqlx::query_as!(
+        CatRow,
+        r#"
+        SELECT c.id, c.name, c.password, c.created_at, c.updated_at,
+               c.last_seen, c.active, c.avatar_filename, c.biography,
+               c.birth_date, cat_breeds.id AS breed_id,
+               cat_breeds.name AS breed_name,
+               DATE_PART('year', AGE(c.birth_date))::int AS age
+        FROM cats c
+        JOIN cat_breeds ON c.breed_id = cat_breeds.id
+        WHERE c.name ILIKE $1
+        ORDER BY c.name ASC
+        LIMIT 20
+        "#,
+        format!("%{}%", params.q)
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(ApiError::internal)?;
+
+    let cats: Vec<Cat> = rows.into_iter().map(Cat::from).collect();
+
+    Ok((
+        StatusCode::OK,
+        Json(CatAutocompleteResponse {
+            status: crate::models::status::Status::Ok,
+            results: cats,
         }),
     ))
 }
