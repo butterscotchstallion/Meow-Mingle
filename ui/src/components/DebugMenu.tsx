@@ -1,14 +1,16 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Menu } from "primereact/menu";
 import { Button } from "primereact/button";
 import type { MenuItem } from "primereact/menuitem";
 import { useAuthStore } from "../store/authStore";
 import { CatAutocomplete } from "./CatAutocomplete";
+import { CreateMatchModal } from "./CreateMatchModal";
 
 export function DebugMenu() {
   const menuRef = useRef<Menu>(null);
   const cat = useAuthStore((s) => s.cat);
   const roles = useAuthStore((s) => s.roles);
+  const [createMatchVisible, setCreateMatchVisible] = useState(false);
 
   const isAdmin = cat !== null && roles.some((r) => r.slug === "cat-admin");
   if (!isAdmin) return null;
@@ -21,6 +23,11 @@ export function DebugMenu() {
           label: "Clear Matches",
           icon: "pi pi-trash",
           command: () => {},
+        },
+        {
+          label: "Create Match",
+          icon: "pi pi-heart",
+          command: () => setCreateMatchVisible(true),
         },
       ],
     },
@@ -46,6 +53,10 @@ export function DebugMenu() {
         aria-controls="debug-menu"
         onClick={(e) => menuRef.current?.toggle(e)}
         className="text-purple-400 hover:text-purple-200 transition-colors"
+      />
+      <CreateMatchModal
+        visible={createMatchVisible}
+        onHide={() => setCreateMatchVisible(false)}
       />
     </div>
   );
