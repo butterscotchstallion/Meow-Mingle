@@ -139,6 +139,19 @@ pub async fn create_app(pool: PgPool, config: AppConfig) -> Result<Router, Box<d
 pub async fn get_db_pool() -> Result<Pool<Postgres>, Box<dyn Error>> {
     dotenv().ok();
     let database_url = env::var("MM_DATABASE_URL").expect("MM_DATABASE_URL must be set");
-    let pool = PgPool::connect(&database_url).await?;
+
+    // Keep the per-process pool small so that all test binaries running in
+    // parallel don't saturate Postgres's connection limit.
+    // Production deployments can override this via MM_DB_MAX_CONNECTIONS.
+    let max_connections: u32 = env::var("MM_DB_MAX_CONNECTIONS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(5);
+
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(max_connections)
+        .connect(&database_url)
+        .await?;
+
     Ok(pool)
 }

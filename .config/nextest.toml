@@ -1,0 +1,20 @@
+[test-groups]
+# All integration tests share the same Postgres instance with no transaction
+# rollback between tests. Running more than one test binary at a time means:
+#   - Multiple pools open simultaneously, exhausting Postgres connections.
+#   - Concurrent sign-ins as the admin cat overwrite each other's session UUID
+#     in the sessions table (ON CONFLICT ... DO UPDATE), causing spurious 401s.
+# A single shared semaphore across every integration test binary fixes both.
+serial-db = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'test(/^test_/)'
+test-group = 'serial-db'
+
+# ------------------------------------------------------------------
+# Convenience profile: forces everything serial at the nextest level
+# too (no parallel binary startup).  Useful when debugging.
+#   cargo nextest run --profile serial
+# ------------------------------------------------------------------
+[profile.serial]
+test-threads = 1
