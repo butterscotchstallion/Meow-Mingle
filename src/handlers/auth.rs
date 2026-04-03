@@ -281,19 +281,7 @@ pub async fn impersonate_handler(
     };
 
     // Must have the admin role
-    let is_admin = sqlx::query_scalar!(
-        r#"
-        SELECT COUNT(*) > 0 AS "is_admin!"
-        FROM cats_roles cr
-        JOIN roles r ON cr.role_id = r.id
-        WHERE cr.cat_id = $1
-          AND r.slug = 'cat-admin'
-        "#,
-        caller.id
-    )
-    .fetch_one(&state.pool)
-    .await
-    .map_err(ApiError::internal)?;
+    let is_admin = crate::models::rbac::cat_has_role(&state.pool, caller.id, "cat-admin").await?;
 
     if !is_admin {
         return Err(ApiError::forbidden());
