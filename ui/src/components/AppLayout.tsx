@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
 import { DebugMenu } from "./DebugMenu";
+import { MatchNotificationIcon } from "./MatchNotificationIcon";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -19,12 +20,11 @@ export function AppLayout({ children, mainClassName }: AppLayoutProps) {
         </Link>
         <div className="flex items-center gap-2">
           <DebugMenu />
+          <MatchNotificationIcon />
           <UserMenu />
         </div>
       </header>
-      <main className={mainClassName ?? "flex-1"}>
-        {children}
-      </main>
+      <main className={mainClassName ?? "flex-1"}>{children}</main>
     </div>
   );
 }
