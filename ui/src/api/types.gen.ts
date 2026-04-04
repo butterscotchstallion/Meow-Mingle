@@ -56,6 +56,11 @@ export type Cat = {
     updatedAt?: string | null;
 };
 
+export type CatAutocompleteResponse = {
+    results: Array<Cat>;
+    status: Status;
+};
+
 export type CatDetailResponse = {
     message?: string | null;
     results?: null | Cat;
@@ -93,6 +98,7 @@ export type InterestListResponse = {
 };
 
 export type Match = {
+    createdAt?: string | null;
     id: string;
     initiator_id: string;
     seen?: boolean | null;
@@ -217,6 +223,42 @@ export type BreedsListHandlerResponses = {
 
 export type BreedsListHandlerResponse = BreedsListHandlerResponses[keyof BreedsListHandlerResponses];
 
+export type CatAutocompleteHandlerData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Search query to filter cats by name
+         */
+        q: string;
+    };
+    url: '/api/v1/cats/autocomplete';
+};
+
+export type CatAutocompleteHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Forbidden — caller does not have the admin role
+     */
+    403: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type CatAutocompleteHandlerResponses = {
+    /**
+     * List of cats matching the search query
+     */
+    200: CatAutocompleteResponse;
+};
+
+export type CatAutocompleteHandlerResponse = CatAutocompleteHandlerResponses[keyof CatAutocompleteHandlerResponses];
+
 export type CatDetailHandlerData = {
     body?: never;
     path: {
@@ -275,7 +317,24 @@ export type InterestListHandlerResponse = InterestListHandlerResponses[keyof Int
 export type MatchesListHandlerData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Filter by seen status. Defaults to false (unseen matches only)
+         */
+        seen?: boolean;
+        /**
+         * Filter by match status. Omit to exclude declined matches
+         */
+        status?: string;
+        /**
+         * Filter to matches where this cat is the initiator
+         */
+        initiator_id?: string;
+        /**
+         * Filter to matches where this cat is the target
+         */
+        target_id?: string;
+    };
     url: '/api/v1/matches';
 };
 
@@ -352,6 +411,42 @@ export type MatchSuggestionsHandlerResponses = {
 };
 
 export type MatchSuggestionsHandlerResponse = MatchSuggestionsHandlerResponses[keyof MatchSuggestionsHandlerResponses];
+
+export type MatchMarkSeenHandlerData = {
+    body?: never;
+    path: {
+        /**
+         * Match ID to mark as seen
+         */
+        match_id: string;
+    };
+    query?: never;
+    url: '/api/v1/matches/{match_id}/seen';
+};
+
+export type MatchMarkSeenHandlerErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Match not found or does not belong to the signed-in cat
+     */
+    404: unknown;
+    /**
+     * Internal server error
+     */
+    500: unknown;
+};
+
+export type MatchMarkSeenHandlerResponses = {
+    /**
+     * Match marked as seen
+     */
+    200: MatchAddedResponse;
+};
+
+export type MatchMarkSeenHandlerResponse = MatchMarkSeenHandlerResponses[keyof MatchMarkSeenHandlerResponses];
 
 export type CatSessionProfileHandlerData = {
     body?: never;

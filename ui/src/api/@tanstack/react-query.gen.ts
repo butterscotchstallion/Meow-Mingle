@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { breedsListHandler, catDetailHandler, catRolesListHandler, catSessionProfileHandler, catUpdateProfileHandler, interestListHandler, matchAddUpdateHandler, matchesListHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
-import type { BreedsListHandlerData, BreedsListHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, CatRolesListHandlerData, CatRolesListHandlerResponse, CatSessionProfileHandlerData, CatSessionProfileHandlerResponse, CatUpdateProfileHandlerData, CatUpdateProfileHandlerResponse, InterestListHandlerData, InterestListHandlerResponse, MatchAddUpdateHandlerData, MatchAddUpdateHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
+import { breedsListHandler, catAutocompleteHandler, catDetailHandler, catRolesListHandler, catSessionProfileHandler, catUpdateProfileHandler, interestListHandler, matchAddUpdateHandler, matchesListHandler, matchMarkSeenHandler, matchSuggestionsHandler, type Options, sessionGetFromCookieHandler, signInHandler, signUpHandler } from '../sdk.gen';
+import type { BreedsListHandlerData, BreedsListHandlerResponse, CatAutocompleteHandlerData, CatAutocompleteHandlerResponse, CatDetailHandlerData, CatDetailHandlerResponse, CatRolesListHandlerData, CatRolesListHandlerResponse, CatSessionProfileHandlerData, CatSessionProfileHandlerResponse, CatUpdateProfileHandlerData, CatUpdateProfileHandlerResponse, InterestListHandlerData, InterestListHandlerResponse, MatchAddUpdateHandlerData, MatchAddUpdateHandlerResponse, MatchesListHandlerData, MatchesListHandlerResponse, MatchMarkSeenHandlerData, MatchMarkSeenHandlerResponse, MatchSuggestionsHandlerData, MatchSuggestionsHandlerResponse, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerResponse, SignInHandlerData, SignInHandlerError, SignInHandlerResponse, SignUpHandlerData, SignUpHandlerResponse } from '../types.gen';
 
 export const signInHandlerMutation = (options?: Partial<Options<SignInHandlerData>>): UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> => {
     const mutationOptions: UseMutationOptions<SignInHandlerResponse, SignInHandlerError, Options<SignInHandlerData>> = {
@@ -82,6 +82,21 @@ export const breedsListHandlerOptions = (options?: Options<BreedsListHandlerData
     queryKey: breedsListHandlerQueryKey(options)
 });
 
+export const catAutocompleteHandlerQueryKey = (options: Options<CatAutocompleteHandlerData>) => createQueryKey('catAutocompleteHandler', options);
+
+export const catAutocompleteHandlerOptions = (options: Options<CatAutocompleteHandlerData>) => queryOptions<CatAutocompleteHandlerResponse, DefaultError, CatAutocompleteHandlerResponse, ReturnType<typeof catAutocompleteHandlerQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await catAutocompleteHandler({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: catAutocompleteHandlerQueryKey(options)
+});
+
 export const catDetailHandlerQueryKey = (options: Options<CatDetailHandlerData>) => createQueryKey('catDetailHandler', options);
 
 export const catDetailHandlerOptions = (options: Options<CatDetailHandlerData>) => queryOptions<CatDetailHandlerResponse, DefaultError, CatDetailHandlerResponse, ReturnType<typeof catDetailHandlerQueryKey>>({
@@ -155,6 +170,20 @@ export const matchSuggestionsHandlerOptions = (options?: Options<MatchSuggestion
     },
     queryKey: matchSuggestionsHandlerQueryKey(options)
 });
+
+export const matchMarkSeenHandlerMutation = (options?: Partial<Options<MatchMarkSeenHandlerData>>): UseMutationOptions<MatchMarkSeenHandlerResponse, DefaultError, Options<MatchMarkSeenHandlerData>> => {
+    const mutationOptions: UseMutationOptions<MatchMarkSeenHandlerResponse, DefaultError, Options<MatchMarkSeenHandlerData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await matchMarkSeenHandler({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 export const catSessionProfileHandlerQueryKey = (options?: Options<CatSessionProfileHandlerData>) => createQueryKey('catSessionProfileHandler', options);
 

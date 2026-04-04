@@ -56,6 +56,7 @@ export const zMatchStatus = z.enum([
 ]);
 
 export const zMatch = z.object({
+    createdAt: z.iso.datetime().nullish(),
     id: z.uuid(),
     initiator_id: z.uuid(),
     seen: z.boolean().nullish(),
@@ -102,6 +103,11 @@ export const zAuthSignUpResponse = z.object({
 
 export const zBreedsListResponse = z.object({
     results: z.array(zBreed),
+    status: zStatus
+});
+
+export const zCatAutocompleteResponse = z.object({
+    results: z.array(zCat),
     status: zStatus
 });
 
@@ -174,6 +180,19 @@ export const zBreedsListHandlerData = z.object({
  */
 export const zBreedsListHandlerResponse = zBreedsListResponse;
 
+export const zCatAutocompleteHandlerData = z.object({
+    body: z.never().optional(),
+    path: z.never().optional(),
+    query: z.object({
+        q: z.string()
+    })
+});
+
+/**
+ * List of cats matching the search query
+ */
+export const zCatAutocompleteHandlerResponse = zCatAutocompleteResponse;
+
 export const zCatDetailHandlerData = z.object({
     body: z.never().optional(),
     path: z.object({
@@ -201,7 +220,12 @@ export const zInterestListHandlerResponse = zInterestListResponse;
 export const zMatchesListHandlerData = z.object({
     body: z.never().optional(),
     path: z.never().optional(),
-    query: z.never().optional()
+    query: z.object({
+        seen: z.boolean().optional(),
+        status: z.string().optional(),
+        initiator_id: z.string().optional(),
+        target_id: z.string().optional()
+    }).optional()
 });
 
 /**
@@ -230,6 +254,19 @@ export const zMatchSuggestionsHandlerData = z.object({
  * List of match suggestions for a specific cat
  */
 export const zMatchSuggestionsHandlerResponse = zMatchSuggestionsResponse;
+
+export const zMatchMarkSeenHandlerData = z.object({
+    body: z.never().optional(),
+    path: z.object({
+        match_id: z.uuid()
+    }),
+    query: z.never().optional()
+});
+
+/**
+ * Match marked as seen
+ */
+export const zMatchMarkSeenHandlerResponse = zMatchAddedResponse;
 
 export const zCatSessionProfileHandlerData = z.object({
     body: z.never().optional(),

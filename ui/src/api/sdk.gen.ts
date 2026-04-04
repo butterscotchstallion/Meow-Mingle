@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BreedsListHandlerData, BreedsListHandlerErrors, BreedsListHandlerResponses, CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, CatRolesListHandlerData, CatRolesListHandlerErrors, CatRolesListHandlerResponses, CatSessionProfileHandlerData, CatSessionProfileHandlerErrors, CatSessionProfileHandlerResponses, CatUpdateProfileHandlerData, CatUpdateProfileHandlerErrors, CatUpdateProfileHandlerResponses, InterestListHandlerData, InterestListHandlerErrors, InterestListHandlerResponses, MatchAddUpdateHandlerData, MatchAddUpdateHandlerErrors, MatchAddUpdateHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerErrors, SessionGetFromCookieHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
+import type { BreedsListHandlerData, BreedsListHandlerErrors, BreedsListHandlerResponses, CatAutocompleteHandlerData, CatAutocompleteHandlerErrors, CatAutocompleteHandlerResponses, CatDetailHandlerData, CatDetailHandlerErrors, CatDetailHandlerResponses, CatRolesListHandlerData, CatRolesListHandlerErrors, CatRolesListHandlerResponses, CatSessionProfileHandlerData, CatSessionProfileHandlerErrors, CatSessionProfileHandlerResponses, CatUpdateProfileHandlerData, CatUpdateProfileHandlerErrors, CatUpdateProfileHandlerResponses, InterestListHandlerData, InterestListHandlerErrors, InterestListHandlerResponses, MatchAddUpdateHandlerData, MatchAddUpdateHandlerErrors, MatchAddUpdateHandlerResponses, MatchesListHandlerData, MatchesListHandlerErrors, MatchesListHandlerResponses, MatchMarkSeenHandlerData, MatchMarkSeenHandlerErrors, MatchMarkSeenHandlerResponses, MatchSuggestionsHandlerData, MatchSuggestionsHandlerErrors, MatchSuggestionsHandlerResponses, SessionGetFromCookieHandlerData, SessionGetFromCookieHandlerErrors, SessionGetFromCookieHandlerResponses, SignInHandlerData, SignInHandlerErrors, SignInHandlerResponses, SignUpHandlerData, SignUpHandlerErrors, SignUpHandlerResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -38,6 +38,8 @@ export const signUpHandler = <ThrowOnError extends boolean = false>(options: Opt
 
 export const breedsListHandler = <ThrowOnError extends boolean = false>(options?: Options<BreedsListHandlerData, ThrowOnError>) => (options?.client ?? client).get<BreedsListHandlerResponses, BreedsListHandlerErrors, ThrowOnError>({ url: '/api/v1/breeds', ...options });
 
+export const catAutocompleteHandler = <ThrowOnError extends boolean = false>(options: Options<CatAutocompleteHandlerData, ThrowOnError>) => (options.client ?? client).get<CatAutocompleteHandlerResponses, CatAutocompleteHandlerErrors, ThrowOnError>({ url: '/api/v1/cats/autocomplete', ...options });
+
 export const catDetailHandler = <ThrowOnError extends boolean = false>(options: Options<CatDetailHandlerData, ThrowOnError>) => (options.client ?? client).get<CatDetailHandlerResponses, CatDetailHandlerErrors, ThrowOnError>({ url: '/api/v1/cats/{id}', ...options });
 
 export const interestListHandler = <ThrowOnError extends boolean = false>(options?: Options<InterestListHandlerData, ThrowOnError>) => (options?.client ?? client).get<InterestListHandlerResponses, InterestListHandlerErrors, ThrowOnError>({ url: '/api/v1/interests', ...options });
@@ -54,6 +56,8 @@ export const matchAddUpdateHandler = <ThrowOnError extends boolean = false>(opti
 });
 
 export const matchSuggestionsHandler = <ThrowOnError extends boolean = false>(options?: Options<MatchSuggestionsHandlerData, ThrowOnError>) => (options?.client ?? client).get<MatchSuggestionsHandlerResponses, MatchSuggestionsHandlerErrors, ThrowOnError>({ url: '/api/v1/matches/suggestions', ...options });
+
+export const matchMarkSeenHandler = <ThrowOnError extends boolean = false>(options: Options<MatchMarkSeenHandlerData, ThrowOnError>) => (options.client ?? client).put<MatchMarkSeenHandlerResponses, MatchMarkSeenHandlerErrors, ThrowOnError>({ url: '/api/v1/matches/{match_id}/seen', ...options });
 
 export const catSessionProfileHandler = <ThrowOnError extends boolean = false>(options?: Options<CatSessionProfileHandlerData, ThrowOnError>) => (options?.client ?? client).get<CatSessionProfileHandlerResponses, CatSessionProfileHandlerErrors, ThrowOnError>({ url: '/api/v1/profile', ...options });
 
