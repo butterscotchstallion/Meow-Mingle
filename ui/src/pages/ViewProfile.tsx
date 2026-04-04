@@ -10,7 +10,6 @@ import type { Cat, CatDetailResponse } from "../api/types.gen";
 
 export function ViewProfile() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   const [cat, setCat] = useState<Cat | null>(null);
   const [loading, setLoading] = useState(true);

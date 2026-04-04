@@ -5,9 +5,11 @@ mod common;
 use crate::common::auth_helpers::{sign_up_and_get_session_and_cat_id, sign_up_and_get_session_id};
 use common::helpers::get_server;
 use meow_mingle::get_db_pool;
-use meow_mingle::handlers::matches::routes::{MATCH_ADD, MATCH_SUGGESTIONS, MATCHES_LIST};
+use meow_mingle::handlers::matches::routes::{
+    MATCH_ADD, MATCH_MARK_SEEN, MATCH_SUGGESTIONS, MATCHES_LIST,
+};
 use meow_mingle::handlers::matches::{
-    MatchAddRequest, MatchAddedResponse, MatchSuggestionsResponse, MatchesListResponse,
+    MatchAddRequest, MatchAddedResponse, MatchStatus, MatchSuggestionsResponse, MatchesListResponse,
 };
 use meow_mingle::models::status::Status;
 use serde_json::json;
@@ -240,5 +242,204 @@ pub async fn test_two_way_matching() {
     assert!(
         pepper_found_in_pepper_matches,
         "Pepper not found in Salt's matches"
+    );
+}
+
+// ── mark-seen tests ──────────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn test_mark_seen_requires_auth() {
+    let server = get_server().await;
+
+    // Create a real match so the match ID exists in the DB
+    let (session_id, cat_id) = sign_up_and_get_session_and_cat_id().await;
+    let (_, target_id) = sign_up_and_get_session_and_cat_id().await;
+
+    let create_resp = server
+        .post(MATCH_ADD)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_id,
+        ))
+        .json(&MatchAddRequest {
+            initiator_id: cat_id,
+            target_id,
+            status: MatchStatus::Pending,
+            seen: Some(false),
+        })
+        .await;
+    create_resp.assert_status(StatusCode::CREATED);
+
+    // Fetch the match to get its real ID
+    let list_resp = server
+        .get(MATCHES_LIST)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_id,
+        ))
+        .await;
+    list_resp.assert_status(StatusCode::OK);
+    let list_body = list_resp.json::<MatchesListResponse>();
+    let match_id = list_body.results[0].id;
+
+    let url = MATCH_MARK_SEEN.replace("{match_id}", &match_id.to_string());
+
+    // No cookie → should get 401
+    let response = server.put(&url).await;
+    response.assert_status(StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_mark_seen_returns_404_for_nonexistent_match() {
+    let server = get_server().await;
+    let (session_id, _cat_id) = sign_up_and_get_session_and_cat_id().await;
+
+    let nonexistent_id = Uuid::new_v4();
+    let url = MATCH_MARK_SEEN.replace("{match_id}", &nonexistent_id.to_string());
+
+    let response = server
+        .put(&url)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_id,
+        ))
+        .await;
+
+    response.assert_status(StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_mark_seen_returns_404_when_cat_is_not_initiator() {
+    let server = get_server().await;
+
+    // Cat A creates the match (A = initiator, B = target)
+    let (session_a, cat_a_id) = sign_up_and_get_session_and_cat_id().await;
+    let (session_b, cat_b_id) = sign_up_and_get_session_and_cat_id().await;
+
+    let create_resp = server
+        .post(MATCH_ADD)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_a,
+        ))
+        .json(&MatchAddRequest {
+            initiator_id: cat_a_id,
+            target_id: cat_b_id,
+            status: MatchStatus::Pending,
+            seen: Some(false),
+        })
+        .await;
+    create_resp.assert_status(StatusCode::CREATED);
+
+    // A fetches their match list to retrieve the match ID
+    let list_resp = server
+        .get(MATCHES_LIST)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_a,
+        ))
+        .await;
+    list_resp.assert_status(StatusCode::OK);
+    let list_body = list_resp.json::<MatchesListResponse>();
+    let match_id = list_body.results[0].id;
+
+    let url = MATCH_MARK_SEEN.replace("{match_id}", &match_id.to_string());
+
+    // B (the target, not initiator) tries to mark it as seen → 404
+    let response = server
+        .put(&url)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_b,
+        ))
+        .await;
+
+    response.assert_status(StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_mark_seen_sets_seen_to_true() {
+    let server = get_server().await;
+
+    // Cat A creates a match with seen = false
+    let (session_a, cat_a_id) = sign_up_and_get_session_and_cat_id().await;
+    let (_, cat_b_id) = sign_up_and_get_session_and_cat_id().await;
+
+    let create_resp = server
+        .post(MATCH_ADD)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_a,
+        ))
+        .json(&MatchAddRequest {
+            initiator_id: cat_a_id,
+            target_id: cat_b_id,
+            status: MatchStatus::Pending,
+            seen: Some(false),
+        })
+        .await;
+    create_resp.assert_status(StatusCode::CREATED);
+
+    // Fetch the match while it's still unseen (default filter is seen=false)
+    let list_resp = server
+        .get(MATCHES_LIST)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_a,
+        ))
+        .await;
+    list_resp.assert_status(StatusCode::OK);
+    let list_body = list_resp.json::<MatchesListResponse>();
+    assert_eq!(
+        list_body.results.len(),
+        1,
+        "should have one unseen match before mark-seen"
+    );
+    let match_id = list_body.results[0].id;
+
+    let url = MATCH_MARK_SEEN.replace("{match_id}", &match_id.to_string());
+
+    // A marks the match as seen
+    let mark_resp = server
+        .put(&url)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_a,
+        ))
+        .await;
+    mark_resp.assert_status(StatusCode::OK);
+    let mark_body = mark_resp.json::<MatchAddedResponse>();
+    assert_eq!(mark_body.status, meow_mingle::models::status::Status::Ok);
+    assert_eq!(mark_body.message, "Match marked as seen");
+
+    // GET with seen=true → match should now appear
+    let seen_url = format!("{}?seen=true", MATCHES_LIST);
+    let seen_resp = server
+        .get(&seen_url)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_a,
+        ))
+        .await;
+    seen_resp.assert_status(StatusCode::OK);
+    let seen_body = seen_resp.json::<MatchesListResponse>();
+    assert!(
+        seen_body.results.iter().any(|m| m.id == match_id),
+        "match should appear in seen=true list after mark-seen"
+    );
+
+    // GET with seen=false (default) → match should no longer appear
+    let unseen_resp = server
+        .get(MATCHES_LIST)
+        .add_cookie(Cookie::new(
+            meow_mingle::models::session::SESSION_COOKIE_NAME,
+            &session_a,
+        ))
+        .await;
+    unseen_resp.assert_status(StatusCode::OK);
+    let unseen_body = unseen_resp.json::<MatchesListResponse>();
+    assert!(
+        !unseen_body.results.iter().any(|m| m.id == match_id),
+        "match should NOT appear in seen=false list after mark-seen"
     );
 }

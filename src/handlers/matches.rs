@@ -6,12 +6,15 @@ use crate::models::photos::populate_photos;
 use crate::models::session::get_cat_from_session_id;
 use crate::models::status::Status;
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 
 use axum_cookie::CookieManager;
 use serde_with::{StringWithSeparator, formats::CommaSeparator, serde_as};
+use sqlx::types::time::OffsetDateTime;
 use sqlx::{Postgres, QueryBuilder};
+use time::serde::rfc3339;
+use tracing::debug;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -19,6 +22,7 @@ pub mod routes {
     pub const MATCHES_LIST: &str = "/api/v1/matches";
     pub const MATCH_SUGGESTIONS: &str = "/api/v1/matches/suggestions";
     pub const MATCH_ADD: &str = "/api/v1/matches";
+    pub const MATCH_MARK_SEEN: &str = "/api/v1/matches/{match_id}/seen";
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, sqlx::Type, utoipa::ToSchema, PartialEq)]
@@ -36,6 +40,8 @@ pub struct Match {
     pub target_id: Uuid,
     pub status: Option<MatchStatus>,
     pub seen: Option<bool>,
+    #[serde(with = "rfc3339::option", rename = "createdAt")]
+    pub created_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, ToSchema)]
@@ -99,6 +105,12 @@ impl Default for MatchListFilters {
 #[utoipa::path(
     get,
     path = routes::MATCHES_LIST,
+    params(
+        ("seen" = Option<bool>, Query, description = "Filter by seen status. Defaults to false (unseen matches only)"),
+        ("status" = Option<String>, Query, description = "Filter by match status. Omit to exclude declined matches"),
+        ("initiator_id" = Option<String>, Query, description = "Filter to matches where this cat is the initiator"),
+        ("target_id" = Option<String>, Query, description = "Filter to matches where this cat is the target"),
+    ),
     responses(
         (status = 200, description = "List of all matches for a specific cat", body = MatchesListResponse),
         (status = 401, description = "Unauthorized"),
@@ -116,7 +128,7 @@ pub async fn matches_list_handler(
     };
 
     let mut query: QueryBuilder<Postgres> = QueryBuilder::new(
-        r#"SELECT id, initiator_id, target_id, status, seen FROM matches WHERE 1=1"#,
+        r#"SELECT id, initiator_id, target_id, status, seen, created_at FROM matches WHERE 1=1"#,
     );
 
     // Always scope results to the authenticated cat
@@ -271,11 +283,24 @@ pub async fn match_add_update_handler(
     cookie_manager: CookieManager,
     Json(match_request): Json<MatchAddRequest>,
 ) -> Result<(StatusCode, Json<MatchAddedResponse>), ApiError> {
+    if match_request.initiator_id == match_request.target_id {
+        return Err(ApiError::bad_request());
+    }
+
     let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
         Ok(Some(cat)) => cat,
         _ => return Err(ApiError::unauthorized()),
     };
-    let initiator_id = cat.id;
+    let mut initiator_id = cat.id;
+
+    let is_admin = crate::models::rbac::cat_has_role(&state.pool, cat.id, "cat-admin").await?;
+    if is_admin {
+        initiator_id = match_request.initiator_id;
+        debug!(
+            "Admin overriding initiator ID to {}",
+            match_request.initiator_id
+        );
+    }
 
     sqlx::query(
         r#"
@@ -286,18 +311,75 @@ pub async fn match_add_update_handler(
     "#,
     )
     .bind(initiator_id)
-    .bind(match_request.target_id)
-    .bind(match_request.status)
+    .bind(&match_request.target_id)
+    .bind(&match_request.status)
     .bind(match_request.seen)
     .execute(&state.pool)
     .await
     .map_err(ApiError::internal)?;
+
+    debug!(
+        "Added match: {} -> {} ({:?})",
+        initiator_id, &match_request.target_id, match_request.status,
+    );
 
     Ok((
         StatusCode::CREATED,
         Json(MatchAddedResponse {
             status: Status::Ok,
             message: String::from("Match created"),
+        }),
+    ))
+}
+
+#[axum::debug_handler]
+#[utoipa::path(
+    put,
+    path = routes::MATCH_MARK_SEEN,
+    params(
+        ("match_id" = Uuid, Path, description = "Match ID to mark as seen")
+    ),
+    responses(
+        (status = 200, description = "Match marked as seen", body = MatchAddedResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Match not found or does not belong to the signed-in cat"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+pub async fn match_mark_seen_handler(
+    State(state): State<AppState>,
+    cookie_manager: CookieManager,
+    Path(match_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<MatchAddedResponse>), ApiError> {
+    let cat = match get_cat_from_session_id(&state.pool, cookie_manager).await {
+        Ok(Some(cat)) => cat,
+        _ => return Err(ApiError::unauthorized()),
+    };
+
+    let rows_affected = sqlx::query!(
+        r#"
+        UPDATE matches
+        SET seen = true
+        WHERE id = $1
+          AND initiator_id = $2
+        "#,
+        match_id,
+        cat.id,
+    )
+    .execute(&state.pool)
+    .await
+    .map_err(ApiError::internal)?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(ApiError::not_found());
+    }
+
+    Ok((
+        StatusCode::OK,
+        Json(MatchAddedResponse {
+            status: Status::Ok,
+            message: String::from("Match marked as seen"),
         }),
     ))
 }

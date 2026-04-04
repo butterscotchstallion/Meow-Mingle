@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE matches\n        SET seen = true\n        WHERE id = $1\n          AND initiator_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3ab71793265c58e64d36e5cc59414ea848e1a40b43b677be121f212b3e1dca65"
+}

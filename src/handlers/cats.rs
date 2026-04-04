@@ -82,6 +82,20 @@ pub async fn cat_detail_handler(
 }
 
 #[axum::debug_handler]
+#[utoipa::path(
+    get,
+    path = routes::CAT_AUTOCOMPLETE,
+    params(
+        ("q" = String, Query, description = "Search query to filter cats by name")
+    ),
+    responses(
+        (status = 200, description = "List of cats matching the search query", body = CatAutocompleteResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden — caller does not have the admin role"),
+        (status = 500, description = "Internal server error")
+    ),
+    tag = "cats"
+)]
 pub async fn cat_autocomplete_handler(
     State(state): State<AppState>,
     cookie_manager: CookieManager,

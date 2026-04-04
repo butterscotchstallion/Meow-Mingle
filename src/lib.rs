@@ -26,6 +26,7 @@ use utoipa_swagger_ui::SwaggerUi;
         version = "0.1.0"
     ),
     paths(
+        crate::handlers::cats::cat_autocomplete_handler,
         crate::handlers::cats::cat_detail_handler,
         crate::handlers::cats::cat_session_profile_handler,
         crate::handlers::cats::cat_update_profile_handler,
@@ -34,6 +35,7 @@ use utoipa_swagger_ui::SwaggerUi;
         crate::handlers::matches::matches_list_handler,
         crate::handlers::matches::match_suggestions_handler,
         crate::handlers::matches::match_add_update_handler,
+        crate::handlers::matches::match_mark_seen_handler,
         crate::handlers::session::session_get_from_cookie_handler,
         crate::handlers::breeds::breeds_list_handler,
         crate::handlers::rbac::cat_roles_list_handler,
@@ -42,6 +44,7 @@ use utoipa_swagger_ui::SwaggerUi;
     components(
         schemas(
             crate::models::cat::Cat,
+            crate::handlers::cats::CatAutocompleteResponse,
             crate::handlers::cats::CatDetailResponse,
             crate::handlers::common::GenericResponse,
             crate::handlers::matches::Match,
@@ -79,9 +82,12 @@ pub use crate::handlers::cats;
 use crate::handlers::cats::routes::{CAT_AUTOCOMPLETE, CAT_SESSION_PROFILE};
 use crate::handlers::interests::interest_list_handler;
 use crate::handlers::interests::routes::INTERESTS_LIST;
-use crate::handlers::matches::routes::{MATCH_ADD, MATCH_SUGGESTIONS, MATCHES_LIST};
+use crate::handlers::matches::routes::{
+    MATCH_ADD, MATCH_MARK_SEEN, MATCH_SUGGESTIONS, MATCHES_LIST,
+};
 use crate::handlers::matches::{
-    match_add_update_handler, match_suggestions_handler, matches_list_handler,
+    match_add_update_handler, match_mark_seen_handler, match_suggestions_handler,
+    matches_list_handler,
 };
 use crate::handlers::rbac::cat_roles_list_handler;
 use crate::handlers::rbac::routes::CAT_ROLE_LIST;
@@ -119,6 +125,7 @@ pub async fn create_app(pool: PgPool, config: AppConfig) -> Result<Router, Box<d
         .route(MATCHES_LIST, get(matches_list_handler))
         .route(MATCH_SUGGESTIONS, get(match_suggestions_handler))
         .route(MATCH_ADD, axum::routing::post(match_add_update_handler))
+        .route(MATCH_MARK_SEEN, put(match_mark_seen_handler))
         .route(BREEDS_LIST, get(breeds_list_handler))
         .route(CAT_ROLE_LIST, get(cat_roles_list_handler))
         .route(INTERESTS_LIST, get(interest_list_handler))

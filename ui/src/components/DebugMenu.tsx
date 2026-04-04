@@ -35,7 +35,6 @@ export function DebugMenu() {
 
   return (
     <div className="flex items-center gap-2">
-      <CatAutocomplete />
       <Menu
         ref={menuRef}
         model={menuItems}

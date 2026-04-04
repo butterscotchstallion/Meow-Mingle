@@ -56,6 +56,10 @@ impl ApiError {
         Self::new(StatusCode::NOT_FOUND, "Not found")
     }
 
+    pub fn bad_request() -> Self {
+        Self::new(StatusCode::BAD_REQUEST, "Bad request")
+    }
+
     pub fn unprocessable_request(e: impl std::fmt::Display) -> Self {
         Self::new(StatusCode::UNPROCESSABLE_ENTITY, e.to_string())
     }
