@@ -28,7 +28,7 @@ utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 cookie = "0.18.1"
 axum-cookie = "0.3.0"
 names = "0.14.0"
-serde_with = "3.18.0"
+serde_with = "3.20.0"
 tower-http = { version = "0.6", features = ["cors"] }
 anyhow = "1.0.102"
 
