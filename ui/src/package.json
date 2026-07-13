@@ -6,7 +6,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "0.94.0",
+    "@hey-api/openapi-ts": "0.97.3",
     "@tailwindcss/vite": "^4.2.1",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
